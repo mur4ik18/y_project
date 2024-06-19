@@ -1,1 +1,42 @@
-# y_project
+<div align="center">
+
+  <img src="assets/logo.png" alt="logo" width="200" height="auto" />
+  <h1>Y-project</h1>
+  
+  <p>
+   Bla-bla 
+  </p>
+  
+  
+<!-- Badges -->
+<p>
+  <a href="https://github.com/mur4ik18/y_project/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/mur4ik18/y_project" alt="contributors" />
+  </a>
+  <a href="">
+    <img src="https://img.shields.io/github/last-commit/mur4ik18/y_project" alt="last update" />
+  </a>
+  <a href="https://github.com/mur4ik18/y_project/network/members">
+    <img src="https://img.shields.io/github/forks/mur4ik18/y_project" alt="forks" />
+  </a>
+  <a href="https://github.com/mur4ik18/y_project/stargazers">
+    <img src="https://img.shields.io/github/stars/mur4ik18/y_project" alt="stars" />
+  </a>
+  <a href="https://github.com/mur4ik18/y_project/issues/">
+    <img src="https://img.shields.io/github/issues/mur4ik18/y_project" alt="open issues" />
+  </a>
+  <a href="https://github.com/mur4ik18/y_project/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/mur4ik18/y_project.svg" alt="license" />
+  </a>
+</p>
+   
+<h4>
+    <a href="https://github.com/mur4ik18/y_project/">View Demo</a>
+  <span> · </span>
+    <a href="https://github.com/mur4ik18/y_project">Documentation</a>
+  <span> · </span>
+    <a href="https://github.com/mur4ik18/y_project/issues/">Report Bug</a>
+  <span> · </span>
+    <a href="https://github.com/mur4ik18/y_project/issues/">Request Feature</a>
+  </h4>
+</div>
