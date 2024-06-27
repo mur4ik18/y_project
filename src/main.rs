@@ -47,12 +47,13 @@ struct Ctx {
     byte: bool,
 }
 
-fn read_file(file_path: String) {
+fn read_file(file_path: String) -> Vec<u8> {
     let bytes = fs::read(file_path.to_owned()).unwrap();
     for byte in bytes.iter() {
         print!("{:X} ", byte);
     }
     println!();
+    bytes
 }
 
 fn help() {
@@ -86,9 +87,9 @@ fn get_arguments() -> Ctx {
     ctx
 }
 
-fn get_sign(file_path: String) -> String {
+fn get_sign(bytes: Vec<u8>) -> String {
     let mut buffer = [0; 1024];
-    let bytes = fs::read(file_path).unwrap();
+
     let mut file_signature: String = String::from("unknown");
 
     let mut offset = 0;
@@ -112,40 +113,38 @@ fn get_sign(file_path: String) -> String {
 }
 
 fn get_file_data(file_path: String, file_signature: &str) {
-    match file_signature{
+    match file_signature {
         "DOS MZ executable" => {
             //TODO: Search infos
-        },
+        }
         "DOS ZM executable" => {
             //TODO: Search infos
-        },
+        }
         "Executable and Linkable Format (ELF)" => {
             //TODO: Search infos
-        },
+        }
         "Mach-O binary (32-bit)" => {
             //TODO: Search infos
-        },
+        }
         "Mach-O binary (64-bit)" => {
             //TODO: Search infos
-        },
+        }
         "Mach-O binary (reverse byte ordering scheme, 32-bit)" => {
             //TODO: Search infos
-        },
+        }
         "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
             //TODO: Search infos
-        },
+        }
         "Java class file, Mach-O Fat Binary" => {
             //TODO: Search infos
-        },
-        _ => {
-            
         }
+        _ => {}
     }
 }
 
 fn main() {
-    println!("I will open file");
-    let args: Vec<String> = get_arguments();
-    read_file(args[1].clone());
-    get_sign(args[1].clone());
+    help();
+    let context: Ctx = get_arguments();
+    let bytecode = read_file(context.filename);
+    get_sign(bytecode);
 }
