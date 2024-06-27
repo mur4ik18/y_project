@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 
-
 struct Signature<'a> {
     name: &'a str,
     signature: &'a [u8],
@@ -57,7 +56,7 @@ fn get_arguments() -> Vec<String> {
     //file_path
 }
 
-fn get_sign(file_path: String) {
+fn get_sign(file_path: String) -> String {
     let mut buffer = [0; 1024];
     let bytes = fs::read(file_path).unwrap(); 
     let mut file_signature: String = String::from("unknown");
@@ -78,11 +77,45 @@ fn get_sign(file_path: String) {
         offset += bytes_copy;
     }
     println!("signature trouvee: {}", file_signature);
+    file_signature
+}
+
+fn get_file_data(file_path: String, file_signature: &str) {
+    match file_signature{
+        "DOS MZ executable" => {
+            //TODO: Search infos
+        },
+        "DOS ZM executable" => {
+            //TODO: Search infos
+        },
+        "Executable and Linkable Format (ELF)" => {
+            //TODO: Search infos
+        },
+        "Mach-O binary (32-bit)" => {
+            //TODO: Search infos
+        },
+        "Mach-O binary (64-bit)" => {
+            //TODO: Search infos
+        },
+        "Mach-O binary (reverse byte ordering scheme, 32-bit)" => {
+            //TODO: Search infos
+        },
+        "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
+            //TODO: Search infos
+        },
+        "Java class file, Mach-O Fat Binary" => {
+            //TODO: Search infos
+        },
+        _ => {
+            
+        }
+    }
 }
 
 fn main() {
     println!("I will open file");
     let args: Vec<String> = get_arguments();
     read_file(args[1].clone());
-    get_sign(args[1].clone());
+    let file_signature = get_sign(args[1].clone());
+    get_file_data(args[1].clone(), &file_signature);
 }
