@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 
-
 struct Signature<'a> {
     name: &'a str,
     signature: &'a [u8],
@@ -39,8 +38,14 @@ const SIGNATURES: [Signature; 8] = [
     Signature {
         name: "Java class file, Mach-O Fat Binary",
         signature: b"\xCA\xFE\xBA\xBE",
-    }
+    },
 ];
+
+// context
+struct Ctx {
+    filename: String,
+    byte: bool,
+}
 
 fn read_file(file_path: String) {
     let bytes = fs::read(file_path.to_owned()).unwrap();
@@ -50,27 +55,52 @@ fn read_file(file_path: String) {
     println!();
 }
 
-fn get_arguments() -> Vec<String> {
+fn help() {
+    println!(
+        "Usage:
+-f <filename> - read file
+-b            - show output in byte code
+"
+    );
+}
+
+fn get_arguments() -> Ctx {
     let args: Vec<String> = env::args().collect();
-    args
-    //println!("Paht : {file_path}");
-    //file_path
+    let mut ctx = Ctx {
+        filename: String::new(),
+        byte: false,
+    };
+    if args.len() <= 2 {
+        eprintln!("Usage: {} -f <filename>", args[0]);
+        std::process::exit(1);
+    }
+    for i in 0..args.len() {
+        if args[i] == "-f" {
+            ctx.filename = args[i + 1].clone();
+        }
+        if args[i] == "-b" {
+            ctx.byte = true;
+        }
+        println!("arg {} - {}", i, args[i]);
+    }
+    ctx
 }
 
 fn get_sign(file_path: String) {
     let mut buffer = [0; 1024];
-    let bytes = fs::read(file_path).unwrap(); 
+    let bytes = fs::read(file_path).unwrap();
     let mut file_signature: String = String::from("unknown");
 
     let mut offset = 0;
     while offset < bytes.len() {
-        let bytes_copy = std::cmp::min(buffer.len(), bytes.len() - offset); 
+        let bytes_copy = std::cmp::min(buffer.len(), bytes.len() - offset);
 
-        buffer[..bytes_copy].copy_from_slice(&bytes[offset..offset + bytes_copy]); 
+        buffer[..bytes_copy].copy_from_slice(&bytes[offset..offset + bytes_copy]);
 
         for signature in SIGNATURES.iter() {
-            if bytes_copy >= signature.signature.len() &&
-                &buffer[0..signature.signature.len()] == signature.signature {
+            if bytes_copy >= signature.signature.len()
+                && &buffer[0..signature.signature.len()] == signature.signature
+            {
                 file_signature = String::from(signature.name);
             }
         }
@@ -81,8 +111,7 @@ fn get_sign(file_path: String) {
 }
 
 fn main() {
-    println!("I will open file");
-    let args: Vec<String> = get_arguments();
-    read_file(args[1].clone());
-    get_sign(args[1].clone());
+    help();
+    let context: Ctx = get_arguments();
+    read_file(context.filename);
 }
