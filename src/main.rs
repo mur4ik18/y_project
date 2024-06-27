@@ -1,12 +1,13 @@
 use std::env;
 use std::fs;
 
+
 struct Signature<'a> {
     name: &'a str,
     signature: &'a [u8],
 }
 
-const SIGNATURES: [Signature; 6] = [
+const SIGNATURES: [Signature; 8] = [
     Signature {
         name: "DOS MZ executable",
         signature: b"\x4D\x5A",
@@ -26,6 +27,14 @@ const SIGNATURES: [Signature; 6] = [
     Signature {
         name: "Mach-O binary (64-bit)",
         signature: b"\xFE\xED\xFA\xCF",
+    },
+    Signature {
+        name: "Mach-O binary (reverse byte ordering scheme, 32-bit)",
+        signature: b"\xCE\xFA\xED\xFE",
+    },
+    Signature {
+        name: "Mach-O binary (reverse byte ordering scheme, 64-bit)",
+        signature: b"\xCF\xFA\xED\xFE",
     },
     Signature {
         name: "Java class file, Mach-O Fat Binary",
@@ -51,6 +60,7 @@ fn get_arguments() -> Vec<String> {
 fn get_sign(file_path: String) {
     let mut buffer = [0; 1024];
     let bytes = fs::read(file_path).unwrap(); 
+    let mut file_signature: String = String::from("unknown");
 
     let mut offset = 0;
     while offset < bytes.len() {
@@ -61,12 +71,13 @@ fn get_sign(file_path: String) {
         for signature in SIGNATURES.iter() {
             if bytes_copy >= signature.signature.len() &&
                 &buffer[0..signature.signature.len()] == signature.signature {
-                println!("signature trouvee: {}", signature.name);
+                file_signature = String::from(signature.name);
             }
         }
 
         offset += bytes_copy;
     }
+    println!("signature trouvee: {}", file_signature);
 }
 
 fn main() {
