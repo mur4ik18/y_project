@@ -6,14 +6,27 @@ struct Signature<'a> {
     signature: &'a [u8],
 }
 
-const SIGNATURES: [Signature; 8] = [
+#[derive(Debug)]
+struct FileInfosMZ<'a> {
+    extra_bytes: &'a[u8],
+    pages: &'a[u8],
+    entries_relocation_table: &'a[u8],
+    header_size: &'a[u8],
+    min_alloc: &'a[u8],
+    max_alloc: &'a[u8],
+    initial_ss: &'a[u8],
+    initial_sp: &'a[u8],
+    checksum: &'a[u8],
+    initial_ip: &'a[u8],
+    initial_cs: &'a[u8],
+    reloc_table_address: &'a[u8],
+    overlay: &'a[u8],
+}
+
+const SIGNATURES: [Signature; 7] = [
     Signature {
         name: "DOS MZ executable",
         signature: b"\x4D\x5A",
-    },
-    Signature {
-        name: "DOS ZM executable",
-        signature: b"\x5A\x4D",
     },
     Signature {
         name: "Executable and Linkable Format (ELF)",
@@ -87,7 +100,7 @@ fn get_arguments() -> Ctx {
     ctx
 }
 
-fn get_sign(bytes: Vec<u8>) -> String {
+fn get_sign(bytes: &[u8]) -> String {
     let mut buffer = [0; 1024];
 
     let mut file_signature: String = String::from("unknown");
@@ -112,13 +125,26 @@ fn get_sign(bytes: Vec<u8>) -> String {
     file_signature
 }
 
-fn get_file_data(file_path: String, file_signature: &str) {
+fn get_file_data(file_signature: &str, bytes: &[u8]) {
     match file_signature {
         "DOS MZ executable" => {
-            //TODO: Search infos
-        }
-        "DOS ZM executable" => {
-            //TODO: Search infos
+            let file_info: FileInfosMZ = FileInfosMZ {
+                extra_bytes:  &bytes[2..4],
+                pages: &bytes[4..6],
+                entries_relocation_table: &bytes[6..8],
+                header_size: &bytes[8..10],
+                min_alloc: &bytes[10..12],
+                max_alloc: &bytes[12..14],
+                initial_ss: &bytes[14..16],
+                initial_sp: &bytes[16..18],
+                checksum: &bytes[18..20],
+                initial_ip: &bytes[20..22],
+                initial_cs: &bytes[22..24],
+                reloc_table_address: &bytes[24..26],
+                overlay: &bytes[26..28],
+            };
+
+            println!("File Infos: {:?}", file_info);
         }
         "Executable and Linkable Format (ELF)" => {
             //TODO: Search infos
@@ -146,5 +172,6 @@ fn main() {
     help();
     let context: Ctx = get_arguments();
     let bytecode = read_file(context.filename);
-    get_sign(bytecode);
+    let sign = get_sign(&bytecode);
+    get_file_data(&sign, &bytecode);
 }
