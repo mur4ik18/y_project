@@ -57,6 +57,20 @@ struct FileInfoELF<'a> {
     header: FileInfoELFHeader<'a>,
 }
 
+#[derive(Debug)]
+struct FileInfoMachO<'a> {
+    e_magic: &'a [u8],
+    e_cputype: &'a [u8],
+    e_cpusubtype: &'a [u8],
+    e_ftype: &'a [u8],
+    e_lcnum: &'a [u8],
+    e_lcsize: &'a [u8],
+    e_flags: &'a [u8],
+}
+
+fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
+    slice.iter().cloned().rev().collect()
+}
 
 const SIGNATURES: [Signature; 7] = [
     Signature {
@@ -197,7 +211,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     e_machine: &bytes[18..20],
                     e_version: &bytes[20..22],
                     e_entry: &bytes[22..26],
-                    e_phoff: &bytes[26..30], // Correction de l'intervalle
+                    e_phoff: &bytes[26..30], 
                     e_shoff: &bytes[30..34],
                     e_flags: &bytes[34..38],
                     e_ehsize: &bytes[38..40],
@@ -231,17 +245,29 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             println!("File Infos: {:?}", file_info);
             
         }
-        "Mach-O binary (32-bit)" => {
-            //TODO: Search infos
+        "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
+            let file_info: FileInfoMachO = FileInfoMachO {
+                e_magic: &bytes[0..4],
+                e_cputype: &bytes[4..8],
+                e_cpusubtype: &bytes[8..12],
+                e_ftype: &bytes[12..16],
+                e_lcnum: &bytes[16..20],
+                e_lcsize: &bytes[20..24],
+                e_flags: &bytes[24..28],
+            };
+            println!("File Infos: {:?}", file_info);
         }
-        "Mach-O binary (64-bit)" => {
-            //TODO: Search infos
-        }
-        "Mach-O binary (reverse byte ordering scheme, 32-bit)" => {
-            //TODO: Search infos
-        }
-        "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
-            //TODO: Search infos
+        "Mach-O binary (reverse byte ordering scheme, 32-bit)" | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
+            let file_info: FileInfoMachO = FileInfoMachO {
+                e_magic: &reverse_bytes(&bytes[0..4]),
+                e_cputype: &reverse_bytes(&bytes[4..8]),
+                e_cpusubtype: &reverse_bytes(&bytes[8..12]),
+                e_ftype: &reverse_bytes(&bytes[12..16]),
+                e_lcnum: &reverse_bytes(&bytes[16..20]),
+                e_lcsize: &reverse_bytes(&bytes[20..24]),
+                e_flags: &reverse_bytes(&bytes[24..28]),
+            };
+            println!("File Infos: {:?}", file_info);
         }
         "Java class file, Mach-O Fat Binary" => {
             //TODO: Search infos
