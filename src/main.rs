@@ -23,6 +23,19 @@ struct FileInfosMZ<'a> {
     overlay: &'a[u8],
 }
 
+struct FileInfoELF<'a> {
+    format: &'a[u8],
+    endianess: &'a[u8],
+    header_version: &'a[u8],
+    elf_version: &'a[u8],
+    os_abi: &'a[u8],
+    abi_version: &'a[u8],
+    obj_file_type: &'a[u8],
+    target_set_architecture: &'a[u8],
+    // TODO: finish header description
+
+}
+
 const SIGNATURES: [Signature; 7] = [
     Signature {
         name: "DOS MZ executable",
