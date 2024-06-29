@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::fs::File;
 
 struct Signature<'a> {
     name: &'a str,
@@ -23,18 +24,39 @@ struct FileInfosMZ<'a> {
     overlay: &'a[u8],
 }
 
-struct FileInfoELF<'a> {
-    format: &'a[u8],
-    endianess: &'a[u8],
-    header_version: &'a[u8],
-    elf_version: &'a[u8],
-    os_abi: &'a[u8],
-    abi_version: &'a[u8],
-    obj_file_type: &'a[u8],
-    target_set_architecture: &'a[u8],
-    // TODO: finish header description
-
+#[derive(Debug)]
+struct FileInfoELFIdentification<'a> {
+    ei_mag: &'a[u8],
+    ei_class: &'a[u8],
+    ei_data: &'a[u8],
+    ei_version: &'a[u8],
+    ei_osabi: &'a[u8],
+    ei_abiversion: &'a[u8],
+    ei_pad: &'a[u8]
 }
+#[derive(Debug)]
+struct FileInfoELFHeader<'a> {
+    e_type: &'a[u8],
+    e_machine: &'a[u8],
+    e_version: &'a[u8],
+    e_entry: &'a[u8],
+    e_phoff: &'a[u8],
+    e_shoff: &'a[u8],
+    e_flags: &'a[u8],
+    e_ehsize: &'a[u8],
+    e_phentsize: &'a[u8],
+    e_phnum: &'a[u8],
+    e_shentsize: &'a[u8],
+    e_shnum: &'a[u8],
+    e_shstrndx: &'a[u8],
+}
+
+#[derive(Debug)]
+struct FileInfoELF<'a> {
+    identification: FileInfoELFIdentification<'a>,
+    header: FileInfoELFHeader<'a>,
+}
+
 
 const SIGNATURES: [Signature; 7] = [
     Signature {
@@ -160,7 +182,54 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             println!("File Infos: {:?}", file_info);
         }
         "Executable and Linkable Format (ELF)" => {
-            //TODO: Search infos
+            let file_info_identification: FileInfoELFIdentification = FileInfoELFIdentification {
+                ei_mag: &bytes[0..4],
+                ei_class: &bytes[4..5],
+                ei_data: &bytes[5..6],
+                ei_version: &bytes[6..7],
+                ei_osabi: &bytes[7..8],
+                ei_abiversion: &bytes[8..9],
+                ei_pad: &bytes[9..16],
+            };
+            let file_info_header = if file_info_identification.ei_class == b"\x01" {
+                FileInfoELFHeader {
+                    e_type: &bytes[16..18],
+                    e_machine: &bytes[18..20],
+                    e_version: &bytes[20..22],
+                    e_entry: &bytes[22..26],
+                    e_phoff: &bytes[26..30], // Correction de l'intervalle
+                    e_shoff: &bytes[30..34],
+                    e_flags: &bytes[34..38],
+                    e_ehsize: &bytes[38..40],
+                    e_phentsize: &bytes[40..42],
+                    e_phnum: &bytes[42..44],
+                    e_shentsize: &bytes[44..46],
+                    e_shnum: &bytes[46..48],
+                    e_shstrndx: &bytes[48..50],
+                }
+            } else {
+                FileInfoELFHeader {
+                    e_type: &bytes[16..18],
+                    e_machine: &bytes[18..20],
+                    e_version: &bytes[20..22],
+                    e_entry: &bytes[22..30],
+                    e_phoff: &bytes[30..38],
+                    e_shoff: &bytes[38..46],
+                    e_flags: &bytes[46..50],
+                    e_ehsize: &bytes[50..52],
+                    e_phentsize: &bytes[52..54],
+                    e_phnum: &bytes[54..56],
+                    e_shentsize: &bytes[56..58],
+                    e_shnum: &bytes[58..60],
+                    e_shstrndx: &bytes[60..62],
+                }
+            };
+            let file_info: FileInfoELF = FileInfoELF{
+                identification: file_info_identification,
+                header: file_info_header,
+            };
+            println!("File Infos: {:?}", file_info);
+            
         }
         "Mach-O binary (32-bit)" => {
             //TODO: Search infos
