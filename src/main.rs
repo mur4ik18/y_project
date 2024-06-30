@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use std::fs::File;
 
 struct Signature<'a> {
     name: &'a str,
@@ -9,6 +8,7 @@ struct Signature<'a> {
 
 #[derive(Debug)]
 struct FileInfosMZ<'a> {
+    magic: &'a[u8],
     extra_bytes: &'a[u8],
     pages: &'a[u8],
     entries_relocation_table: &'a[u8],
@@ -22,6 +22,8 @@ struct FileInfosMZ<'a> {
     initial_cs: &'a[u8],
     reloc_table_address: &'a[u8],
     overlay: &'a[u8],
+    pe_offset: usize,
+    pe_magic: &'a[u8],
 }
 
 #[derive(Debug)]
@@ -177,7 +179,11 @@ fn get_sign(bytes: &[u8]) -> String {
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
     match file_signature {
         "DOS MZ executable" => {
+            let pe_offset_bytes = &bytes[60..64];
+            let pe_offset = u32::from_le_bytes([pe_offset_bytes[0], pe_offset_bytes[1], pe_offset_bytes[2], pe_offset_bytes[3]]) as usize;
+
             let file_info: FileInfosMZ = FileInfosMZ {
+                magic:  &bytes[0..2],
                 extra_bytes:  &bytes[2..4],
                 pages: &bytes[4..6],
                 entries_relocation_table: &bytes[6..8],
@@ -191,6 +197,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 initial_cs: &bytes[22..24],
                 reloc_table_address: &bytes[24..26],
                 overlay: &bytes[26..28],
+                pe_offset,
+                pe_magic: &bytes[pe_offset..pe_offset+4],
             };
 
             println!("File Infos: {:?}", file_info);
