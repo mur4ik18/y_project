@@ -8,6 +8,7 @@ enum Addressing {
     RINDIRECT_POS_INC,
     RINDIRECT_RINDEXED,
     RINDIRECT_INDEXED,
+    RTR, // Register to Register
 }
 
 struct Opcode {
