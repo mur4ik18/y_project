@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 pub fn get_opcodes() -> HashMap {
     let ARM = HashMap::from([
-        (0x__,Opcode("CBZ", Addressing::)),
-        (0x__,Opcode()),
+        (0x8B, Opcode("ADD", Addressing::IMMEDIATE)),
+        (0xD2, Opcode("MOV", Addressing::IMMEDIATE)),
     ]);
 }
