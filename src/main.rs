@@ -6,8 +6,12 @@ struct Signature<'a> {
     signature: &'a [u8],
 }
 
+/*********************************************************************************/
+/********************************PE structure*************************************/
+/*********************************************************************************/
+
 #[derive(Debug)]
-struct FileInfosMZ<'a> {
+struct FileInfosMZHeader<'a> {
     magic: &'a[u8],
     extra_bytes: &'a[u8],
     pages: &'a[u8],
@@ -23,8 +27,30 @@ struct FileInfosMZ<'a> {
     reloc_table_address: &'a[u8],
     overlay: &'a[u8],
     pe_offset: usize,
-    pe_magic: &'a[u8],
 }
+
+
+#[derive(Debug)]
+struct FileInfosPEHeader<'a> {
+    pe_magic: &'a[u8],
+    pe_machine: &'a[u8],
+    pe_section_nbr: &'a[u8],
+    pe_time_date_stamp: &'a[u8],
+    pe_ptr_symbol_table: &'a[u8],
+    pe_symbol_nbr: &'a[u8],
+    pe_size_opt_header: &'a[u8],
+    pe_characteristics: &'a[u8],
+}
+
+#[derive(Debug)]
+struct FileInfosPE<'a> {
+    mz_header: FileInfosMZHeader <'a>,
+    pe_header: FileInfosPEHeader <'a>,
+}
+
+/**********************************************************************************/
+/********************************ELF structure*************************************/
+/**********************************************************************************/
 
 #[derive(Debug)]
 struct FileInfoELFIdentification<'a> {
@@ -59,6 +85,9 @@ struct FileInfoELF<'a> {
     header: FileInfoELFHeader<'a>,
 }
 
+/*************************************************************************************/
+/********************************Mach-O structure*************************************/
+/*************************************************************************************/
 #[derive(Debug)]
 struct FileInfoMachO<'a> {
     e_magic: &'a [u8],
@@ -182,7 +211,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             let pe_offset_bytes = &bytes[60..64];
             let pe_offset = u32::from_le_bytes([pe_offset_bytes[0], pe_offset_bytes[1], pe_offset_bytes[2], pe_offset_bytes[3]]) as usize;
 
-            let file_info: FileInfosMZ = FileInfosMZ {
+            let file_info: FileInfosMZHeader = FileInfosMZHeader {
                 magic:  &bytes[0..2],
                 extra_bytes:  &bytes[2..4],
                 pages: &bytes[4..6],
@@ -198,10 +227,20 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 reloc_table_address: &bytes[24..26],
                 overlay: &bytes[26..28],
                 pe_offset,
-                pe_magic: &bytes[pe_offset..pe_offset+4],
             };
 
-            println!("File Infos: {:?}", file_info);
+            let file_info_pe: FileInfosPEHeader = FileInfosPEHeader {
+                pe_magic: &bytes[pe_offset..pe_offset+4],
+                pe_machine: &bytes[pe_offset+4..pe_offset+6],
+                pe_section_nbr: &bytes[pe_offset+6..pe_offset+8],
+                pe_time_date_stamp: &bytes[pe_offset+8..pe_offset+12],
+                pe_ptr_symbol_table: &bytes[pe_offset+12..pe_offset+16],
+                pe_symbol_nbr: &bytes[pe_offset+16..pe_offset+20],
+                pe_size_opt_header: &bytes[pe_offset+20..pe_offset+22],
+                pe_characteristics: &bytes[pe_offset+22..pe_offset+24],
+            };
+
+            println!("File Infos: {:?} {:?}", file_info, file_info_pe);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: FileInfoELFIdentification = FileInfoELFIdentification {
