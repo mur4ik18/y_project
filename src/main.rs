@@ -1,9 +1,9 @@
 use std::env;
 use std::fs;
 
-/************************************************************************************/
-/********************************File Signatures*************************************/
-/************************************************************************************/
+/**************************************************************************************/
+/******************************** File Signatures *************************************/
+/**************************************************************************************/
 
 struct Signature<'a> {
     name: &'a str,
@@ -41,9 +41,9 @@ const SIGNATURES: [Signature; 7] = [
     },
 ];
 
-/*********************************************************************************/
-/********************************PE structure*************************************/
-/*********************************************************************************/
+/***********************************************************************************/
+/******************************** PE structure *************************************/
+/***********************************************************************************/
 
 #[derive(Debug)]
 struct FileInfosMZHeader<'a> {
@@ -78,14 +78,56 @@ struct FileInfosPEHeader<'a> {
 }
 
 #[derive(Debug)]
+struct FileInfosPEOptionalHeaderDataDirectory<'a> {
+    pf_virtual_address: &'a[u8],
+    pf_size: &'a[u8],
+}
+
+#[derive(Debug)]
+struct FileInfosPEOptionalHeader<'a> {
+    pb_magic: &'a[u8],
+    pb_major_lv: &'a[u8],
+    pb_minor_lv: &'a[u8],
+    pb_size_code: &'a[u8],
+    pb_size_init_data: &'a[u8],
+    pb_size_uinit_data: &'a[u8],
+    pb_entry_point: &'a[u8],
+    pb_code_base: &'a[u8],
+    pb_data_base: &'a[u8],
+    pb_image_base: &'a[u8],
+    pb_section_align: &'a[u8],
+    pb_file_align: &'a[u8],
+    pb_major_os_version: &'a[u8],
+    pb_minor_os_version: &'a[u8],
+    pb_major_img_version: &'a[u8],
+    pb_minor_img_version: &'a[u8],
+    pb_major_subsystem_version: &'a[u8],
+    pb_minor_subsystem_version: &'a[u8],
+    pb_win32_version_value: &'a[u8],
+    pb_img_size: &'a[u8],
+    pb_headers_size: &'a[u8],
+    pb_checksum: &'a[u8],
+    pb_subsystem: &'a[u8],
+    pb_dll_characteristics: &'a[u8],
+    pb_size_stack_reserve: &'a[u8],
+    pb_size_stack_commit: &'a[u8],
+    pb_size_heap_reserve: &'a[u8],
+    pb_size_heap_commit: &'a[u8],
+    pb_loader_flags: &'a[u8],
+    pb_nbr_rva_and_sizes: &'a[u8],
+    pb_data_directory: FileInfosPEOptionalHeaderDataDirectory <'a>
+}
+
+#[derive(Debug)]
 struct FileInfosPE<'a> {
     mz_header: FileInfosMZHeader <'a>,
     pe_header: FileInfosPEHeader <'a>,
+    pe_optional_header: FileInfosPEOptionalHeader <'a>,
 }
 
-/**********************************************************************************/
-/********************************ELF structure*************************************/
-/**********************************************************************************/
+/************************************************************************************/
+/******************************** ELF structure *************************************/
+/************************************************************************************/
 
 #[derive(Debug)]
 struct FileInfoELFIdentification<'a> {
@@ -97,6 +139,7 @@ struct FileInfoELFIdentification<'a> {
     ei_abiversion: &'a[u8],
     ei_pad: &'a[u8]
 }
+
 #[derive(Debug)]
 struct FileInfoELFHeader<'a> {
     e_type: &'a[u8],
@@ -120,9 +163,9 @@ struct FileInfoELF<'a> {
     header: FileInfoELFHeader<'a>,
 }
 
-/*************************************************************************************/
-/********************************Mach-O structure*************************************/
-/*************************************************************************************/
+/***************************************************************************************/
+/******************************** Mach-O structure *************************************/
+/***************************************************************************************/
 #[derive(Debug)]
 struct FileInfoMachO<'a> {
     e_magic: &'a [u8],
@@ -133,6 +176,8 @@ struct FileInfoMachO<'a> {
     e_lcsize: &'a [u8],
     e_flags: &'a [u8],
 }
+
+
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
