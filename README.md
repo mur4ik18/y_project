@@ -40,3 +40,10 @@
     <a href="https://github.com/mur4ik18/y_project/issues/">Request Feature</a>
   </h4>
 </div>
+
+
+links:
+http://ref.x86asm.net/#Instruction-Operand-Codes
+https://github.com/CAS-Atlantic/AArch64-Encoding/blob/master/AArch64_ops.csv
+https://modexp.wordpress.com/2018/10/30/arm64-assembly/
+https://www.labs.cs.uregina.ca/301/ARM-addressing/lecture.html
