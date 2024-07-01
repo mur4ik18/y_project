@@ -12,6 +12,6 @@ enum Addressing {
 }
 
 struct Opcode {
-    mnemonic: String,
+    mnemonic: &str,
     addressing: Addressing,
 }
