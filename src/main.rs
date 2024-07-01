@@ -45,127 +45,136 @@ const SIGNATURES: [Signature; 7] = [
 /******************************** PE structure *************************************/
 /***********************************************************************************/
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfosMZHeader<'a> {
-    magic: &'a[u8],
-    extra_bytes: &'a[u8],
-    pages: &'a[u8],
-    entries_relocation_table: &'a[u8],
-    header_size: &'a[u8],
-    min_alloc: &'a[u8],
-    max_alloc: &'a[u8],
-    initial_ss: &'a[u8],
-    initial_sp: &'a[u8],
-    checksum: &'a[u8],
-    initial_ip: &'a[u8],
-    initial_cs: &'a[u8],
-    reloc_table_address: &'a[u8],
-    overlay: &'a[u8],
+struct MZHeader<'a> {
+    magic: &'a [u8],
+    extra_bytes: &'a [u8],
+    pages: &'a [u8],
+    entries_relocation_table: &'a [u8],
+    header_size: &'a [u8],
+    min_alloc: &'a [u8],
+    max_alloc: &'a [u8],
+    initial_ss: &'a [u8],
+    initial_sp: &'a [u8],
+    checksum: &'a [u8],
+    initial_ip: &'a [u8],
+    initial_cs: &'a [u8],
+    reloc_table_address: &'a [u8],
+    overlay: &'a [u8],
     pe_offset: usize,
 }
 
-
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfosPEHeader<'a> {
-    pe_magic: &'a[u8],
-    pe_machine: &'a[u8],
-    pe_section_nbr: &'a[u8],
-    pe_time_date_stamp: &'a[u8],
-    pe_ptr_symbol_table: &'a[u8],
-    pe_symbol_nbr: &'a[u8],
-    pe_size_opt_header: &'a[u8],
-    pe_characteristics: &'a[u8],
+struct PEHeader<'a> {
+    magic: &'a [u8],
+    machine: &'a [u8],
+    section_count: &'a [u8],
+    timestamp: &'a [u8],
+    symbol_table_pointer: &'a [u8],
+    symbol_count: &'a [u8],
+    optional_header_size: &'a [u8],
+    characteristics: &'a [u8],
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfosPEOptionalHeaderDataDirectory<'a> {
-    pf_virtual_address: &'a[u8],
-    pf_size: &'a[u8],
+struct DataDirectory<'a> {
+    virtual_address: &'a [u8],
+    size: &'a [u8],
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfosPEOptionalHeader<'a> {
-    pb_magic: &'a[u8],
-    pb_major_lv: &'a[u8],
-    pb_minor_lv: &'a[u8],
-    pb_size_code: &'a[u8],
-    pb_size_init_data: &'a[u8],
-    pb_size_uinit_data: &'a[u8],
-    pb_entry_point: &'a[u8],
-    pb_code_base: &'a[u8],
-    pb_data_base: &'a[u8],
-    pb_image_base: &'a[u8],
-    pb_section_align: &'a[u8],
-    pb_file_align: &'a[u8],
-    pb_major_os_version: &'a[u8],
-    pb_minor_os_version: &'a[u8],
-    pb_major_img_version: &'a[u8],
-    pb_minor_img_version: &'a[u8],
-    pb_major_subsystem_version: &'a[u8],
-    pb_minor_subsystem_version: &'a[u8],
-    pb_win32_version_value: &'a[u8],
-    pb_img_size: &'a[u8],
-    pb_headers_size: &'a[u8],
-    pb_checksum: &'a[u8],
-    pb_subsystem: &'a[u8],
-    pb_dll_characteristics: &'a[u8],
-    pb_size_stack_reserve: &'a[u8],
-    pb_size_stack_commit: &'a[u8],
-    pb_size_heap_reserve: &'a[u8],
-    pb_size_heap_commit: &'a[u8],
-    pb_loader_flags: &'a[u8],
-    pb_nbr_rva_and_sizes: &'a[u8],
-    pb_data_directory: FileInfosPEOptionalHeaderDataDirectory <'a>
+struct OptionalHeader<'a> {
+    magic: &'a [u8],
+    major_linker_version: &'a [u8],
+    minor_linker_version: &'a [u8],
+    code_size: &'a [u8],
+    initialized_data_size: &'a [u8],
+    uninitialized_data_size: &'a [u8],
+    entry_point_address: &'a [u8],
+    base_of_code: &'a [u8],
+    base_of_data: &'a [u8],
+    image_base: &'a [u8],
+    section_alignment: &'a [u8],
+    file_alignment: &'a [u8],
+    major_os_version: &'a [u8],
+    minor_os_version: &'a [u8],
+    major_image_version: &'a [u8],
+    minor_image_version: &'a [u8],
+    major_subsystem_version: &'a [u8],
+    minor_subsystem_version: &'a [u8],
+    win32_version_value: &'a [u8],
+    image_size: &'a [u8],
+    headers_size: &'a [u8],
+    checksum: &'a [u8],
+    subsystem: &'a [u8],
+    dll_characteristics: &'a [u8],
+    stack_reserve_size: &'a [u8],
+    stack_commit_size: &'a [u8],
+    heap_reserve_size: &'a [u8],
+    heap_commit_size: &'a [u8],
+    loader_flags: &'a [u8],
+    number_of_rva_and_sizes: &'a [u8],
+    data_directory: DataDirectory<'a>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfosPE<'a> {
-    mz_header: FileInfosMZHeader <'a>,
-    pe_header: FileInfosPEHeader <'a>,
-    pe_optional_header: FileInfosPEOptionalHeader <'a>,
+struct PEFile<'a> {
+    mz_header: MZHeader<'a>,
+    pe_header: PEHeader<'a>,
+    optional_header: OptionalHeader<'a>,
 }
 
 /************************************************************************************/
 /******************************** ELF structure *************************************/
 /************************************************************************************/
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfoELFIdentification<'a> {
-    ei_mag: &'a[u8],
-    ei_class: &'a[u8],
-    ei_data: &'a[u8],
-    ei_version: &'a[u8],
-    ei_osabi: &'a[u8],
-    ei_abiversion: &'a[u8],
-    ei_pad: &'a[u8]
+struct ELFIdentification<'a> {
+    magic: &'a [u8],
+    class: &'a [u8],
+    data: &'a [u8],
+    version: &'a [u8],
+    os_abi: &'a [u8],
+    abi_version: &'a [u8],
+    padding: &'a [u8],
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfoELFHeader<'a> {
-    e_type: &'a[u8],
-    e_machine: &'a[u8],
-    e_version: &'a[u8],
-    e_entry: &'a[u8],
-    e_phoff: &'a[u8],
-    e_shoff: &'a[u8],
-    e_flags: &'a[u8],
-    e_ehsize: &'a[u8],
-    e_phentsize: &'a[u8],
-    e_phnum: &'a[u8],
-    e_shentsize: &'a[u8],
-    e_shnum: &'a[u8],
-    e_shstrndx: &'a[u8],
+struct ELFHeader<'a> {
+    file_type: &'a [u8],
+    machine: &'a [u8],
+    version: &'a [u8],
+    entry_point: &'a [u8],
+    program_header_offset: &'a [u8],
+    section_header_offset: &'a [u8],
+    flags: &'a [u8],
+    header_size: &'a [u8],
+    program_header_entry_size: &'a [u8],
+    program_header_entry_count: &'a [u8],
+    section_header_entry_size: &'a [u8],
+    section_header_entry_count: &'a [u8],
+    section_name_string_table_index: &'a [u8],
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct FileInfoELF<'a> {
-    identification: FileInfoELFIdentification<'a>,
-    header: FileInfoELFHeader<'a>,
+    identification: ELFIdentification<'a>,
+    header: ELFHeader<'a>,
 }
 
 /***************************************************************************************/
 /******************************** Mach-O structure *************************************/
 /***************************************************************************************/
+
+#[allow(dead_code)]
 #[derive(Debug)]
 struct FileInfoMachO<'a> {
     e_magic: &'a [u8],
@@ -176,8 +185,6 @@ struct FileInfoMachO<'a> {
     e_lcsize: &'a [u8],
     e_flags: &'a [u8],
 }
-
-
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
@@ -260,7 +267,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             let pe_offset_bytes = &bytes[60..64];
             let pe_offset = u32::from_le_bytes([pe_offset_bytes[0], pe_offset_bytes[1], pe_offset_bytes[2], pe_offset_bytes[3]]) as usize;
 
-            let file_info: FileInfosMZHeader = FileInfosMZHeader {
+            let file_info: MZHeader = MZHeader {
                 magic:  &bytes[0..2],
                 extra_bytes:  &bytes[2..4],
                 pages: &bytes[4..6],
@@ -278,60 +285,60 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 pe_offset,
             };
 
-            let file_info_pe: FileInfosPEHeader = FileInfosPEHeader {
-                pe_magic: &bytes[pe_offset..pe_offset+4],
-                pe_machine: &bytes[pe_offset+4..pe_offset+6],
-                pe_section_nbr: &bytes[pe_offset+6..pe_offset+8],
-                pe_time_date_stamp: &bytes[pe_offset+8..pe_offset+12],
-                pe_ptr_symbol_table: &bytes[pe_offset+12..pe_offset+16],
-                pe_symbol_nbr: &bytes[pe_offset+16..pe_offset+20],
-                pe_size_opt_header: &bytes[pe_offset+20..pe_offset+22],
-                pe_characteristics: &bytes[pe_offset+22..pe_offset+24],
+            let file_info_pe: PEHeader = PEHeader {
+                magic: &bytes[pe_offset..pe_offset+4],
+                machine: &bytes[pe_offset+4..pe_offset+6],
+                section_count: &bytes[pe_offset+6..pe_offset+8],
+                timestamp: &bytes[pe_offset+8..pe_offset+12],
+                symbol_table_pointer: &bytes[pe_offset+12..pe_offset+16],
+                symbol_count: &bytes[pe_offset+16..pe_offset+20],
+                optional_header_size: &bytes[pe_offset+20..pe_offset+22],
+                characteristics: &bytes[pe_offset+22..pe_offset+24],
             };
 
             println!("File Infos: {:?} {:?}", file_info, file_info_pe);
         }
         "Executable and Linkable Format (ELF)" => {
-            let file_info_identification: FileInfoELFIdentification = FileInfoELFIdentification {
-                ei_mag: &bytes[0..4],
-                ei_class: &bytes[4..5],
-                ei_data: &bytes[5..6],
-                ei_version: &bytes[6..7],
-                ei_osabi: &bytes[7..8],
-                ei_abiversion: &bytes[8..9],
-                ei_pad: &bytes[9..16],
+            let file_info_identification: ELFIdentification = ELFIdentification {
+                magic: &bytes[0..4],
+                class: &bytes[4..5],
+                data: &bytes[5..6],
+                version: &bytes[6..7],
+                os_abi: &bytes[7..8],
+                abi_version: &bytes[8..9],
+                padding: &bytes[9..16],
             };
-            let file_info_header = if file_info_identification.ei_class == b"\x01" {
-                FileInfoELFHeader {
-                    e_type: &bytes[16..18],
-                    e_machine: &bytes[18..20],
-                    e_version: &bytes[20..22],
-                    e_entry: &bytes[22..26],
-                    e_phoff: &bytes[26..30], 
-                    e_shoff: &bytes[30..34],
-                    e_flags: &bytes[34..38],
-                    e_ehsize: &bytes[38..40],
-                    e_phentsize: &bytes[40..42],
-                    e_phnum: &bytes[42..44],
-                    e_shentsize: &bytes[44..46],
-                    e_shnum: &bytes[46..48],
-                    e_shstrndx: &bytes[48..50],
+            let file_info_header = if file_info_identification.class == b"\x01" {
+                ELFHeader {
+                    file_type: &bytes[16..18],
+                    machine: &bytes[18..20],
+                    version: &bytes[20..22],
+                    entry_point: &bytes[22..26],
+                    program_header_offset: &bytes[26..30], 
+                    section_header_offset: &bytes[30..34],
+                    flags: &bytes[34..38],
+                    header_size: &bytes[38..40],
+                    program_header_entry_size: &bytes[40..42],
+                    program_header_entry_count: &bytes[42..44],
+                    section_header_entry_size: &bytes[44..46],
+                    section_header_entry_count: &bytes[46..48],
+                    section_name_string_table_index: &bytes[48..50],
                 }
             } else {
-                FileInfoELFHeader {
-                    e_type: &bytes[16..18],
-                    e_machine: &bytes[18..20],
-                    e_version: &bytes[20..22],
-                    e_entry: &bytes[22..30],
-                    e_phoff: &bytes[30..38],
-                    e_shoff: &bytes[38..46],
-                    e_flags: &bytes[46..50],
-                    e_ehsize: &bytes[50..52],
-                    e_phentsize: &bytes[52..54],
-                    e_phnum: &bytes[54..56],
-                    e_shentsize: &bytes[56..58],
-                    e_shnum: &bytes[58..60],
-                    e_shstrndx: &bytes[60..62],
+                ELFHeader {
+                    file_type: &bytes[16..18],
+                    machine: &bytes[18..20],
+                    version: &bytes[20..22],
+                    entry_point: &bytes[22..30],
+                    program_header_offset: &bytes[30..38],
+                    section_header_offset: &bytes[38..46],
+                    flags: &bytes[46..50],
+                    header_size: &bytes[50..52],
+                    program_header_entry_size: &bytes[52..54],
+                    program_header_entry_count: &bytes[54..56],
+                    section_header_entry_size: &bytes[56..58],
+                    section_header_entry_count: &bytes[58..60],
+                    section_name_string_table_index: &bytes[60..62],
                 }
             };
             let file_info: FileInfoELF = FileInfoELF{
