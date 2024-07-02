@@ -78,8 +78,8 @@ struct PEHeader<'a> {
     machine: &'a [u8],
     section_count: &'a [u8],
     timestamp: &'a [u8],
-    symbol_table_pointer: &'a [u8],
-    symbol_count: &'a [u8],
+    symbol_table_pointer: usize,
+    symbol_count: u32,
     optional_header_size: &'a [u8],
     characteristics: &'a [u8],
 }
@@ -144,7 +144,7 @@ struct Symbol<'a> {
     number_aux_symbols: &'a [u8],
 }
 
-struct SymbolTable {
+struct SymbolTable<'a> {
     symbols:  Vec<Symbol<'a>>,
 }
 
@@ -303,17 +303,35 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 overlay: &bytes[26..28],
                 pe_offset,
             };
+            let symbol_table_offset_bytes = &bytes[pe_offset + 12..pe_offset + 16];
+            let symbol_table_pointer = u32::from_le_bytes([
+                symbol_table_offset_bytes[0],
+                symbol_table_offset_bytes[1],
+                symbol_table_offset_bytes[2],
+                symbol_table_offset_bytes[3],
+            ]) as usize;
+
+            let symbol_count_bytes = &bytes[pe_offset + 16..pe_offset + 20];
+            let symbol_count = u32::from_le_bytes([
+                symbol_count_bytes[0],
+                symbol_count_bytes[1],
+                symbol_count_bytes[2],
+                symbol_count_bytes[3],
+            ]);
 
             let file_info_pe: PEHeader = PEHeader {
                 magic: &bytes[pe_offset..pe_offset + 4],
                 machine: &bytes[pe_offset + 4..pe_offset + 6],
                 section_count: &bytes[pe_offset + 6..pe_offset + 8],
                 timestamp: &bytes[pe_offset + 8..pe_offset + 12],
-                symbol_table_pointer: &bytes[pe_offset + 12..pe_offset + 16],
-                symbol_count: &bytes[pe_offset + 16..pe_offset + 20],
+                symbol_table_pointer: symbol_table_pointer,
+                symbol_count: symbol_count,
                 optional_header_size: &bytes[pe_offset + 20..pe_offset + 22],
                 characteristics: &bytes[pe_offset + 22..pe_offset + 24],
             };
+
+            
+
 
             println!("File Infos: {:?} {:?}", file_info, file_info_pe);
         }
