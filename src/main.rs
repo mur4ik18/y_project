@@ -135,15 +135,19 @@ struct PEFile<'a> {
     optional_header: OptionalHeader<'a>,
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
 struct Symbol<'a> {
     name: String,
     value: &'a [u8],
-    section_number: usize,
+    section_number: &'a [u8],
     data_type: &'a [u8],
     storage_class: &'a [u8],
     number_aux_symbols: &'a [u8],
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
 struct SymbolTable<'a> {
     symbols:  Vec<Symbol<'a>>,
 }
@@ -330,10 +334,28 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 characteristics: &bytes[pe_offset + 22..pe_offset + 24],
             };
 
+            let mut symbol_table = SymbolTable{
+                symbols: Vec::new(),
+            };
+                
+            let mut offset:usize = 0;
+            for _i in 0..file_info_pe.symbol_count {
+                let name_bytes = &bytes[file_info_pe.symbol_table_pointer + offset..file_info_pe.symbol_table_pointer + 8 + offset];
+                let name = String::from_utf8_lossy(name_bytes).trim_end_matches('\0').to_string();
+
+                symbol_table.symbols.push(Symbol {
+                    name,
+                    value: &bytes[symbol_table_pointer + 8 + offset..symbol_table_pointer + 12 + offset],
+                    section_number: &bytes[symbol_table_pointer + 12 + offset..symbol_table_pointer + 14 + offset],
+                    data_type: &bytes[symbol_table_pointer + 14 + offset..symbol_table_pointer + 16 + offset],
+                    storage_class: &bytes[symbol_table_pointer + 16 + offset..symbol_table_pointer + 17 + offset],
+                    number_aux_symbols: &bytes[symbol_table_pointer + 17 + offset..symbol_table_pointer + 18 + offset],
+                });
+                offset += 18;
+            }
             
 
-
-            println!("File Infos: {:?} {:?}", file_info, file_info_pe);
+            println!("File Infos: {:?} {:?} {:?}", file_info, file_info_pe, symbol_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
