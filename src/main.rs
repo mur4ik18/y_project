@@ -3,7 +3,7 @@ use std::fs;
 
 // context
 struct Ctx {
-    filename: &'a String,
+    filename: String,
     byte: bool,
 }
 
@@ -196,7 +196,7 @@ fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
 }
 
-fn read_file(file_path: String) -> Vec<u8> {
+fn read_file(file_path: &String) -> Vec<u8> {
     let bytes = fs::read(file_path.to_owned()).unwrap();
     for byte in bytes.iter() {
         print!("{:X} ", byte);
@@ -387,7 +387,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 fn main() {
     help();
     let context: Ctx = get_arguments();
-    let bytecode = read_file(context.filename);
+    let bytecode = read_file(&context.filename);
     let sign = get_sign(&bytecode);
     get_file_data(&sign, &bytecode);
 }
