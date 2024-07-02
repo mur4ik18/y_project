@@ -1,12 +1,6 @@
 use std::env;
 use std::fs;
 
-// context
-struct Ctx {
-    filename: &'a String,
-    byte: bool,
-}
-
 /**************************************************************************************/
 /******************************** File Signatures *************************************/
 /**************************************************************************************/
@@ -78,7 +72,7 @@ struct PEHeader<'a> {
     machine: &'a [u8],
     section_count: &'a [u8],
     timestamp: &'a [u8],
-    symbol_table_pointer: &'a [u8],
+    symbol_table_pointer: usize,
     symbol_count: &'a [u8],
     optional_header_size: &'a [u8],
     characteristics: &'a [u8],
@@ -145,7 +139,6 @@ struct ELFIdentification<'a> {
     magic: &'a [u8],
     class: &'a [u8],
     data: &'a [u8],
-
     version: &'a [u8],
     os_abi: &'a [u8],
     abi_version: &'a [u8],
@@ -180,6 +173,7 @@ struct FileInfoELF<'a> {
 /***************************************************************************************/
 /******************************** Mach-O structure *************************************/
 /***************************************************************************************/
+
 #[allow(dead_code)]
 #[derive(Debug)]
 struct FileInfoMachO<'a> {
@@ -194,6 +188,12 @@ struct FileInfoMachO<'a> {
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
+}
+
+// context
+struct Ctx {
+    filename: String,
+    byte: bool,
 }
 
 fn read_file(file_path: String) -> Vec<u8> {
@@ -265,16 +265,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
     match file_signature {
         "DOS MZ executable" => {
             let pe_offset_bytes = &bytes[60..64];
-            let pe_offset = u32::from_le_bytes([
-                pe_offset_bytes[0],
-                pe_offset_bytes[1],
-                pe_offset_bytes[2],
-                pe_offset_bytes[3],
-            ]) as usize;
+            let pe_offset = u32::from_le_bytes([pe_offset_bytes[0], pe_offset_bytes[1], pe_offset_bytes[2], pe_offset_bytes[3]]) as usize;
 
             let file_info: MZHeader = MZHeader {
-                magic: &bytes[0..2],
-                extra_bytes: &bytes[2..4],
+                magic:  &bytes[0..2],
+                extra_bytes:  &bytes[2..4],
                 pages: &bytes[4..6],
                 entries_relocation_table: &bytes[6..8],
                 header_size: &bytes[8..10],
@@ -290,15 +285,24 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 pe_offset,
             };
 
+            let symbol_table_pointer_bytes = &bytes[pe_offset+12..pe_offset+16];
+            let symbol_table_pointer = u32::from_le_bytes([
+                symbol_table_pointer_bytes[0],
+                symbol_table_pointer_bytes[1],
+                symbol_table_pointer_bytes[2],
+                symbol_table_pointer_bytes[3]]
+            ) as usize;
+
+            //Todo: Aff PE_Optionnal_Header and fix symbol_table_pointer
             let file_info_pe: PEHeader = PEHeader {
-                magic: &bytes[pe_offset..pe_offset + 4],
-                machine: &bytes[pe_offset + 4..pe_offset + 6],
-                section_count: &bytes[pe_offset + 6..pe_offset + 8],
-                timestamp: &bytes[pe_offset + 8..pe_offset + 12],
-                symbol_table_pointer: &bytes[pe_offset + 12..pe_offset + 16],
-                symbol_count: &bytes[pe_offset + 16..pe_offset + 20],
-                optional_header_size: &bytes[pe_offset + 20..pe_offset + 22],
-                characteristics: &bytes[pe_offset + 22..pe_offset + 24],
+                magic: &bytes[pe_offset..pe_offset+4],
+                machine: &bytes[pe_offset+4..pe_offset+6],
+                section_count: &bytes[pe_offset+6..pe_offset+8],
+                timestamp: &bytes[pe_offset+8..pe_offset+12],
+                symbol_table_pointer,
+                symbol_count: &bytes[pe_offset+16..pe_offset+20],
+                optional_header_size: &bytes[pe_offset+20..pe_offset+22],
+                characteristics: &bytes[pe_offset+22..pe_offset+24],
             };
 
             println!("File Infos: {:?} {:?}", file_info, file_info_pe);
@@ -319,7 +323,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     machine: &bytes[18..20],
                     version: &bytes[20..22],
                     entry_point: &bytes[22..26],
-                    program_header_offset: &bytes[26..30],
+                    program_header_offset: &bytes[26..30], 
                     section_header_offset: &bytes[30..34],
                     flags: &bytes[34..38],
                     header_size: &bytes[38..40],
@@ -346,11 +350,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     section_name_string_table_index: &bytes[60..62],
                 }
             };
-            let file_info: FileInfoELF = FileInfoELF {
+            let file_info: FileInfoELF = FileInfoELF{
                 identification: file_info_identification,
                 header: file_info_header,
             };
             println!("File Infos: {:?}", file_info);
+            
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
             let file_info: FileInfoMachO = FileInfoMachO {
@@ -364,8 +369,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             };
             println!("File Infos: {:?}", file_info);
         }
-        "Mach-O binary (reverse byte ordering scheme, 32-bit)"
-        | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
+        "Mach-O binary (reverse byte ordering scheme, 32-bit)" | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
             let file_info: FileInfoMachO = FileInfoMachO {
                 e_magic: &reverse_bytes(&bytes[0..4]),
                 e_cputype: &reverse_bytes(&bytes[4..8]),
