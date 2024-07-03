@@ -210,6 +210,27 @@ struct FileInfoMachO<'a> {
     e_flags: &'a [u8],
 }
 
+/***************************************************************************************/
+/******************************** JVM structure ****************************************/
+/***************************************************************************************/
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct JVM<'a> {
+    magic: &'a [u8],
+    format_class: &'a [u8],
+    pool_count: &'a [u8],
+    access_flags: &'a [u8],
+    this_class: &'a [u8],
+    super_class: &'a [u8],
+    interfaces_count: &'a [u8],
+    fields_count: &'a [u8],
+    method_count: &'a [u8],
+    attributes_count: &'a [u8],
+}
+
+
+
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
 }
@@ -353,7 +374,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 });
                 offset += 18;
             }
-            
+            //TODO: Verify if assumtpions are correct
 
             println!("File Infos: {:?} {:?} {:?}", file_info, file_info_pe, symbol_table);
         }
@@ -405,6 +426,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 header: file_info_header,
             };
             println!("File Infos: {:?}", file_info);
+            //TODO: Extract Code
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
             let file_info: FileInfoMachO = FileInfoMachO {
@@ -417,6 +439,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 e_flags: &bytes[24..28],
             };
             println!("File Infos: {:?}", file_info);
+            //TODO: Extract code
         }
         "Mach-O binary (reverse byte ordering scheme, 32-bit)"
         | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
