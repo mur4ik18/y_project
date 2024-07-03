@@ -216,18 +216,25 @@ struct FileInfoMachO<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct JVM<'a> {
+struct ClassFile<'a> {
     magic: &'a [u8],
-    format_class: &'a [u8],
+    minor_version: &'a [u8],
+    major_version: &'a [u8],
     pool_count: &'a [u8],
+    //todo add pool struct
     access_flags: &'a [u8],
     this_class: &'a [u8],
     super_class: &'a [u8],
     interfaces_count: &'a [u8],
+    //todo add interfaces struct
     fields_count: &'a [u8],
+    //todo add field struct
     method_count: &'a [u8],
+    //todo add method struct
     attributes_count: &'a [u8],
+    //todo add attribute struct
 }
+
 
 
 
