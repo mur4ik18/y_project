@@ -210,6 +210,55 @@ struct MachOHeader<'a> {
     flags: &'a [u8],
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct LoadCommand<'a> {
+    cmd: &'a [u8],
+    cmdsize: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct SegmentCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    segname: &'a [u8],
+    vmaddr: &'a [u8],
+    vmsize: &'a [u8],
+    fileoff: &'a [u8],
+    filesize: &'a [u8],
+    maxprot: &'a [u8],
+    initprot: &'a [u8],
+    nsects: &'a [u8],
+    flags: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct DylibCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    name_offset: &'a [u8],
+    timestamp: &'a [u8],
+    current_version: &'a [u8],
+    compatibility_version: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct SymtabCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    symoff: &'a [u8],
+    nsyms: &'a [u8],
+    stroff: &'a [u8],
+    strsize: &'a [u8],
+}
+
+#[allow(dead_code)]
+enum LoadCommandData<'a> {
+    Segment(SegmentCommand<'a>),
+    Symtab(SymtabCommand<'a>),
+    Dymlib(DylibCommand<'a>)
+}
+
 /***************************************************************************************/
 /******************************** JVM structure ****************************************/
 /***************************************************************************************/
