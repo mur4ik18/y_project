@@ -200,14 +200,14 @@ struct FileInfoELF<'a> {
 /***************************************************************************************/
 #[allow(dead_code)]
 #[derive(Debug)]
-struct FileInfoMachO<'a> {
-    e_magic: &'a [u8],
-    e_cputype: &'a [u8],
-    e_cpusubtype: &'a [u8],
-    e_ftype: &'a [u8],
-    e_lcnum: &'a [u8],
-    e_lcsize: &'a [u8],
-    e_flags: &'a [u8],
+struct MachOHeader<'a> {
+    magic: &'a [u8],
+    cputype: &'a [u8],
+    cpusubtype: &'a [u8],
+    ftype: &'a [u8],
+    lcnum: &'a [u8],
+    lcsize: &'a [u8],
+    flags: &'a [u8],
 }
 
 /***************************************************************************************/
@@ -436,28 +436,28 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             //TODO: Extract Code
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
-            let file_info: FileInfoMachO = FileInfoMachO {
-                e_magic: &bytes[0..4],
-                e_cputype: &bytes[4..8],
-                e_cpusubtype: &bytes[8..12],
-                e_ftype: &bytes[12..16],
-                e_lcnum: &bytes[16..20],
-                e_lcsize: &bytes[20..24],
-                e_flags: &bytes[24..28],
+            let file_info: MachOHeader = MachOHeader {
+                magic: &bytes[0..4],
+                cputype: &bytes[4..8],
+                cpusubtype: &bytes[8..12],
+                ftype: &bytes[12..16],
+                lcnum: &bytes[16..20],
+                lcsize: &bytes[20..24],
+                flags: &bytes[24..28],
             };
             println!("File Infos: {:?}", file_info);
             //TODO: Extract code
         }
         "Mach-O binary (reverse byte ordering scheme, 32-bit)"
         | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
-            let file_info: FileInfoMachO = FileInfoMachO {
-                e_magic: &reverse_bytes(&bytes[0..4]),
-                e_cputype: &reverse_bytes(&bytes[4..8]),
-                e_cpusubtype: &reverse_bytes(&bytes[8..12]),
-                e_ftype: &reverse_bytes(&bytes[12..16]),
-                e_lcnum: &reverse_bytes(&bytes[16..20]),
-                e_lcsize: &reverse_bytes(&bytes[20..24]),
-                e_flags: &reverse_bytes(&bytes[24..28]),
+            let file_info: MachOHeader = MachOHeader {
+                magic: &reverse_bytes(&bytes[0..4]),
+                cputype: &reverse_bytes(&bytes[4..8]),
+                cpusubtype: &reverse_bytes(&bytes[8..12]),
+                ftype: &reverse_bytes(&bytes[12..16]),
+                lcnum: &reverse_bytes(&bytes[16..20]),
+                lcsize: &reverse_bytes(&bytes[20..24]),
+                flags: &reverse_bytes(&bytes[24..28]),
             };
             println!("File Infos: {:?}", file_info);
         }
