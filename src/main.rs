@@ -253,6 +253,25 @@ struct SymtabCommand<'a> {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
+struct SymsegCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    offset: &'a [u8],
+    size: &'a [u8]
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+
+struct EntryPointCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    entryoff: &'a [u8],
+    stacksize: &'a [u8]
+}
+
+
+
+#[allow(dead_code)]
 enum LoadCommandData<'a> {
     Segment(SegmentCommand<'a>),
     Symtab(SymtabCommand<'a>),
