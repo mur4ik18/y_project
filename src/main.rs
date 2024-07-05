@@ -269,6 +269,38 @@ struct EntryPointCommand<'a>{
     stacksize: &'a [u8]
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RoutineCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    init_address: &'a [u8],
+    init_module: &'a [u8],
+    reserved_bytes: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct DysymtabCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    ilocalsym: &'a [u8],
+    nlocalsym: &'a [u8],
+    iextdefsym: &'a [u8],
+    nextdefsim: &'a [u8],
+    iundefsym: &'a [u8],
+    nundefsym: &'a [u8],
+    tocoff: &'a [u8],
+    ntoc: &'a [u8],
+    modtaboff: &'a [u8],
+    nmodtab: &'a [u8],
+    extrefsymoff: &'a [u8],
+    nextrefsyms: &'a [u8],
+    indirectsymoff: &'a [u8],
+    nindirectsyms: &'a [u8],
+    extreloff: &'a [u8],
+    nextre1: &'a [u8],
+    locreloff: &'a [u8],
+    nlocre1: &'a [u8],
+}
 
 
 #[allow(dead_code)]
