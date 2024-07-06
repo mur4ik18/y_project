@@ -302,13 +302,35 @@ struct DysymtabCommand<'a>{
     nlocre1: &'a [u8],
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct PrebindChecksumCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    cksum: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct UUIDCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    uuid: &'a [u8],
+}
 
 #[allow(dead_code)]
 enum LoadCommandData<'a> {
     Segment(SegmentCommand<'a>),
     Symtab(SymtabCommand<'a>),
-    Dymlib(DylibCommand<'a>)
+    Dymlib(DylibCommand<'a>),
+    Dysymtab(DysymtabCommand<'a>),
+    Routine(RoutineCommand<'a>),
+    EntryPoint(EntryPointCommand<'a>),
+    Symseg(SymsegCommand<'a>),
+    PrebindChecksum(PrebindChecksumCommand<'a>),
+    UUID(UUIDCommand<'a>)
+
 }
+//todo: Update cmd list
+
 
 /***************************************************************************************/
 /******************************** JVM structure ****************************************/
@@ -481,7 +503,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 });
                 offset += 18;
             }
-            //TODO: Verify if assumtpions are correct
 
             println!("File Infos: {:?} {:?} {:?}", file_info, file_info_pe, symbol_table);
         }
