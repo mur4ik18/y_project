@@ -349,6 +349,13 @@ struct EncryptionInfoCommand<'a> {
     cryptid: &'a[u8],
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct VersionMinCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    version: &'a[u8],	
+    sdk: &'a[u8],
+}
 
 #[allow(dead_code)]
 enum LoadCommandData<'a> {
@@ -362,8 +369,8 @@ enum LoadCommandData<'a> {
     PrebindChecksum(PrebindChecksumCommand<'a>),
     UUID(UUIDCommand<'a>),
     Thread(ThreadCommand<'a>),
-    EncryptionInfo(EncryptionInfoCommand<'a>)
-
+    EncryptionInfo(EncryptionInfoCommand<'a>),
+    VersionMin(VersionMinCommand<'a>),
 }
 //todo: Update cmd list
 
