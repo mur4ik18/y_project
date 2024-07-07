@@ -234,6 +234,21 @@ struct SegmentCommand<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
+struct SectionCommand<'a> {
+    sectname: &'a [u8],
+    segname: &'a [u8],
+    addr: &'a [u8],
+    size: &'a [u8],
+    offset: &'a [u8],
+    align: &'a [u8],
+    reloff: &'a [u8],
+    nreloc: &'a [u8],
+    flags: &'a [u8],
+    reserved: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
 struct DylibCommand<'a> {
     load_cmd: LoadCommand <'a>,
     name_offset: &'a [u8],
@@ -317,6 +332,25 @@ struct UUIDCommand<'a>{
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
+struct ThreadCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    flavor: &'a[u8],
+    count: &'a[u8],
+    state: &'a[u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct EncryptionInfoCommand<'a> {
+    load_cmd: LoadCommand <'a>,
+    cryptoff: &'a[u8],
+    cryptsize: &'a[u8],
+    cryptid: &'a[u8],
+}
+
+
+#[allow(dead_code)]
 enum LoadCommandData<'a> {
     Segment(SegmentCommand<'a>),
     Symtab(SymtabCommand<'a>),
@@ -326,7 +360,9 @@ enum LoadCommandData<'a> {
     EntryPoint(EntryPointCommand<'a>),
     Symseg(SymsegCommand<'a>),
     PrebindChecksum(PrebindChecksumCommand<'a>),
-    UUID(UUIDCommand<'a>)
+    UUID(UUIDCommand<'a>),
+    Thread(ThreadCommand<'a>),
+    EncryptionInfo(EncryptionInfoCommand<'a>)
 
 }
 //todo: Update cmd list
