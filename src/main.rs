@@ -381,6 +381,12 @@ struct DyldInfoCommand<'a>{
     export_size: &'a[u8],
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RunPathCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    offset: &'a[u8],
+}
 
 #[allow(dead_code)]
 enum LoadCommandData<'a> {
