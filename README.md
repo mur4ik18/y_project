@@ -4,7 +4,7 @@
   <h1>Y-project</h1>
   
   <p>
-   Bla-bla 
+  This project goal's is to implement a basic disassembly software.
   </p>
   
   

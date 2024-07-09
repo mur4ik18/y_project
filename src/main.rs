@@ -358,6 +358,31 @@ struct VersionMinCommand<'a> {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
+struct LinkEditDataCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    dataoff: &'a[u8],	
+    datasize: &'a[u8],	
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct DyldInfoCommand<'a>{
+    load_cmd: LoadCommand <'a>,
+    rebase_off: &'a[u8],
+    rebase_size: &'a[u8],
+    bind_off: &'a[u8],
+    bind_size: &'a[u8],
+    weak_bind_off: &'a[u8],
+    weak_bind_size: &'a[u8],
+    lazy_bind_off: &'a[u8],
+    lazy_bind_size: &'a[u8],
+    export_of: &'a[u8],
+    export_size: &'a[u8],
+}
+
+
+#[allow(dead_code)]
 enum LoadCommandData<'a> {
     Segment(SegmentCommand<'a>),
     Symtab(SymtabCommand<'a>),
@@ -371,6 +396,7 @@ enum LoadCommandData<'a> {
     Thread(ThreadCommand<'a>),
     EncryptionInfo(EncryptionInfoCommand<'a>),
     VersionMin(VersionMinCommand<'a>),
+    
 }
 //todo: Update cmd list
 
