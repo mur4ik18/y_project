@@ -86,9 +86,30 @@ struct PEHeader<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct DataDirectory<'a> {
+struct DataDirectoryEntry<'a> {
     virtual_address: &'a [u8],
     size: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct DataDirectory<'a> {
+    export_table: DataDirectoryEntry<'a>,
+    import_table: DataDirectoryEntry<'a>,
+    resource_table: DataDirectoryEntry<'a>,
+    exception_table: DataDirectoryEntry<'a>,
+    certificate_table: DataDirectoryEntry<'a>,
+    base_relocation_table: DataDirectoryEntry<'a>,
+    debug: DataDirectoryEntry<'a>,
+    architecture: DataDirectoryEntry<'a>,
+    global_ptr: DataDirectoryEntry<'a>,
+    tls_table: DataDirectoryEntry<'a>,
+    load_config_table: DataDirectoryEntry<'a>,
+    bound_import: DataDirectoryEntry<'a>,
+    iat: DataDirectoryEntry<'a>,
+    delay_import_descriptor: DataDirectoryEntry<'a>,
+    clr_runtime_header: DataDirectoryEntry<'a>,
+    reserved: DataDirectoryEntry<'a>,
 }
 
 #[allow(dead_code)]
@@ -124,7 +145,7 @@ struct OptionalHeader<'a> {
     heap_commit_size: &'a [u8],
     loader_flags: &'a [u8],
     number_of_rva_and_sizes: &'a [u8],
-    data_directory: DataDirectory<'a>,
+    data_directory: DataDirectoryEntry<'a>,
 }
 
 #[allow(dead_code)]
@@ -585,7 +606,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 heap_commit_size: &bytes[pe_offset + 108..pe_offset + 112],
                 loader_flags: &bytes[pe_offset + 112..pe_offset + 116],
                 number_of_rva_and_sizes: &bytes[pe_offset + 116..pe_offset + 120],
-                data_directory: DataDirectory {
+                data_directory: DataDirectoryEntry {
                     virtual_address: &bytes[pe_offset + 120..pe_offset + 124],
                     size: &bytes[pe_offset + 124..pe_offset + 128],
                 },
