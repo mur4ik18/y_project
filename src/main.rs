@@ -556,35 +556,39 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic: &bytes[pe_offset + 24..pe_offset + 26],
-                major_linker_version,
-                minor_linker_version,
-                code_size,
-                initialized_data_size,
-                uninitialized_data_size,
-                entry_point_address,
-                base_of_code,
-                base_of_data,
-                image_base,
-                section_alignment,
-                file_alignment,
-                major_os_version,
-                minor_os_version,
-                major_image_version,
-                minor_image_version,
-                major_subsystem_version,
-                minor_subsystem_version,
-                win32_version_value,
-                image_size,
-                headers_size,
-                checksum,
-                subsystem,
-                dll_characteristics,
-                stack_reserve_size,
-                stack_commit_size,
-                heap_reserve_size,
-                heap_commit_size,
-                loader_flags,
-                number_of_rva_and_sizes,
+                major_linker_version: &bytes[pe_offset + 26..pe_offset + 27],
+                minor_linker_version: &bytes[pe_offset + 27..pe_offset + 28],
+                code_size: &bytes[pe_offset + 28..pe_offset + 32],
+                initialized_data_size: &bytes[pe_offset + 32..pe_offset + 36],
+                uninitialized_data_size: &bytes[pe_offset + 36..pe_offset + 40],
+                entry_point_address: &bytes[pe_offset + 40..pe_offset + 44],
+                base_of_code: &bytes[pe_offset + 44..pe_offset + 48],
+                base_of_data: &bytes[pe_offset + 48..pe_offset + 52],
+                image_base: &bytes[pe_offset + 52..pe_offset + 56],
+                section_alignment: &bytes[pe_offset + 56..pe_offset + 60],
+                file_alignment: &bytes[pe_offset + 60..pe_offset + 64],
+                major_os_version: &bytes[pe_offset + 64..pe_offset + 66],
+                minor_os_version: &bytes[pe_offset + 66..pe_offset + 68],
+                major_image_version: &bytes[pe_offset + 68..pe_offset + 70],
+                minor_image_version: &bytes[pe_offset + 70..pe_offset + 72],
+                major_subsystem_version: &bytes[pe_offset + 72..pe_offset + 74],
+                minor_subsystem_version: &bytes[pe_offset + 74..pe_offset + 76],
+                win32_version_value: &bytes[pe_offset + 76..pe_offset + 80],
+                image_size: &bytes[pe_offset + 80..pe_offset + 84],
+                headers_size: &bytes[pe_offset + 84..pe_offset + 88],
+                checksum: &bytes[pe_offset + 88..pe_offset + 92],
+                subsystem: &bytes[pe_offset + 92..pe_offset + 94],
+                dll_characteristics: &bytes[pe_offset + 94..pe_offset + 96],
+                stack_reserve_size: &bytes[pe_offset + 96..pe_offset + 100],
+                stack_commit_size: &bytes[pe_offset + 100..pe_offset + 104],
+                heap_reserve_size: &bytes[pe_offset + 104..pe_offset + 108],
+                heap_commit_size: &bytes[pe_offset + 108..pe_offset + 112],
+                loader_flags: &bytes[pe_offset + 112..pe_offset + 116],
+                number_of_rva_and_sizes: &bytes[pe_offset + 116..pe_offset + 120],
+                data_directory: DataDirectory {
+                    virtual_address: &bytes[pe_offset + 120..pe_offset + 124],
+                    size: &bytes[pe_offset + 124..pe_offset + 128],
+                },
             };
     
 
@@ -609,7 +613,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             }
 
 
-            println!("File Infos: {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table);
+            println!("File Infos: {:?} {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table, file_optional_header);
 
             
         }
