@@ -163,7 +163,6 @@ struct ELFIdentification<'a> {
     magic: &'a [u8],
     class: &'a [u8],
     data: &'a [u8],
-
     version: &'a [u8],
     os_abi: &'a [u8],
     abi_version: &'a [u8],
@@ -406,7 +405,6 @@ enum LoadCommandData<'a> {
 }
 //todo: Update cmd list
 
-
 /***************************************************************************************/
 /******************************** JVM structure ****************************************/
 /***************************************************************************************/
@@ -431,9 +429,6 @@ struct ClassFile<'a> {
     attributes_count: &'a [u8],
     //todo add attribute struct
 }
-
-
-
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
@@ -515,7 +510,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 pe_offset_bytes[3],
             ]) as usize;
 
-            let file_info: MZHeader = MZHeader {
+            let file_mz_header: MZHeader = MZHeader {
                 magic: &bytes[0..2],
                 extra_bytes: &bytes[2..4],
                 pages: &bytes[4..6],
@@ -548,7 +543,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 symbol_count_bytes[3],
             ]);
 
-            let file_info_pe: PEHeader = PEHeader {
+            let file_pe_header: PEHeader = PEHeader {
                 magic: &bytes[pe_offset..pe_offset + 4],
                 machine: &bytes[pe_offset + 4..pe_offset + 6],
                 section_count: &bytes[pe_offset + 6..pe_offset + 8],
@@ -559,13 +554,47 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 characteristics: &bytes[pe_offset + 22..pe_offset + 24],
             };
 
+            let file_optional_header: OptionalHeader = OptionalHeader {
+                magic: &bytes[pe_offset + 24..pe_offset + 26],
+                major_linker_version,
+                minor_linker_version,
+                code_size,
+                initialized_data_size,
+                uninitialized_data_size,
+                entry_point_address,
+                base_of_code,
+                base_of_data,
+                image_base,
+                section_alignment,
+                file_alignment,
+                major_os_version,
+                minor_os_version,
+                major_image_version,
+                minor_image_version,
+                major_subsystem_version,
+                minor_subsystem_version,
+                win32_version_value,
+                image_size,
+                headers_size,
+                checksum,
+                subsystem,
+                dll_characteristics,
+                stack_reserve_size,
+                stack_commit_size,
+                heap_reserve_size,
+                heap_commit_size,
+                loader_flags,
+                number_of_rva_and_sizes,
+            };
+    
+
             let mut symbol_table = SymbolTable{
                 symbols: Vec::new(),
             };
                 
             let mut offset:usize = 0;
-            for _i in 0..file_info_pe.symbol_count {
-                let name_bytes = &bytes[file_info_pe.symbol_table_pointer + offset..file_info_pe.symbol_table_pointer + 8 + offset];
+            for _i in 0..file_pe_header.symbol_count {
+                let name_bytes = &bytes[file_pe_header.symbol_table_pointer + offset..file_pe_header.symbol_table_pointer + 8 + offset];
                 let name = String::from_utf8_lossy(name_bytes).trim_end_matches('\0').to_string();
 
                 symbol_table.symbols.push(Symbol {
@@ -579,7 +608,10 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 offset += 18;
             }
 
-            println!("File Infos: {:?} {:?} {:?}", file_info, file_info_pe, symbol_table);
+
+            println!("File Infos: {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table);
+
+            
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
@@ -624,15 +656,15 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     section_name_string_table_index: &bytes[60..62],
                 }
             };
-            let file_info: FileInfoELF = FileInfoELF {
+            let file_mz_header: FileInfoELF = FileInfoELF {
                 identification: file_info_identification,
                 header: file_info_header,
             };
-            println!("File Infos: {:?}", file_info);
+            println!("File Infos: {:?}", file_mz_header);
             //TODO: Extract Code
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
-            let file_info: MachOHeader = MachOHeader {
+            let file_mz_header: MachOHeader = MachOHeader {
                 magic: &bytes[0..4],
                 cputype: &bytes[4..8],
                 cpusubtype: &bytes[8..12],
@@ -641,12 +673,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 lcsize: &bytes[20..24],
                 flags: &bytes[24..28],
             };
-            println!("File Infos: {:?}", file_info);
+            println!("File Infos: {:?}", file_mz_header);
             //TODO: Extract code
         }
         "Mach-O binary (reverse byte ordering scheme, 32-bit)"
         | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
-            let file_info: MachOHeader = MachOHeader {
+            let file_mz_header: MachOHeader = MachOHeader {
                 magic: &reverse_bytes(&bytes[0..4]),
                 cputype: &reverse_bytes(&bytes[4..8]),
                 cpusubtype: &reverse_bytes(&bytes[8..12]),
@@ -655,7 +687,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 lcsize: &reverse_bytes(&bytes[20..24]),
                 flags: &reverse_bytes(&bytes[24..28]),
             };
-            println!("File Infos: {:?}", file_info);
+            println!("File Infos: {:?}", file_mz_header);
         }
         "Java class file, Mach-O Fat Binary" => {
             //TODO: Search infos
