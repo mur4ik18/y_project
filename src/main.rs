@@ -530,7 +530,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 pe_offset_bytes[2],
                 pe_offset_bytes[3],
             ]) as usize;
-
+            
+            //Extracting the MZ Header
             let file_mz_header: MZHeader = MZHeader {
                 magic: &bytes[0..2],
                 extra_bytes: &bytes[2..4],
@@ -563,7 +564,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 symbol_count_bytes[2],
                 symbol_count_bytes[3],
             ]);
-
+            
+            //Extracting the PE Header
             let file_pe_header: PEHeader = PEHeader {
                 magic: &bytes[pe_offset..pe_offset + 4],
                 machine: &bytes[pe_offset + 4..pe_offset + 6],
@@ -575,6 +577,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 characteristics: &bytes[pe_offset + 22..pe_offset + 24],
             };
 
+            //Extracting the PE Optionnal header
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic: &bytes[pe_offset + 24..pe_offset + 26],
                 major_linker_version: &bytes[pe_offset + 26..pe_offset + 27],
@@ -612,7 +615,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 },
             };
     
-
+            //Extracting the symbol table
             let mut symbol_table = SymbolTable{
                 symbols: Vec::new(),
             };
