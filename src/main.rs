@@ -425,9 +425,9 @@ enum LoadCommandData<'a> {
     RunPath(RunPathCommand<'a>),
     DyldInfo(DyldInfoCommand<'a>),
     LinkEditData(LinkEditDataCommand<'a>)
-    
+
 }
-//todo: Update cmd list
+
 
 /***************************************************************************************/
 /******************************** JVM structure ****************************************/
@@ -536,20 +536,20 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             
             //Extracting the MZ Header
             let file_mz_header: MZHeader = MZHeader {
-                magic: &bytes[0..2],
-                extra_bytes: &bytes[2..4],
-                pages: &bytes[4..6],
-                entries_relocation_table: &bytes[6..8],
-                header_size: &bytes[8..10],
-                min_alloc: &bytes[10..12],
-                max_alloc: &bytes[12..14],
-                initial_ss: &bytes[14..16],
-                initial_sp: &bytes[16..18],
-                checksum: &bytes[18..20],
-                initial_ip: &bytes[20..22],
-                initial_cs: &bytes[22..24],
-                reloc_table_address: &bytes[24..26],
-                overlay: &bytes[26..28],
+                magic:                      &bytes[0..2],
+                extra_bytes:                &bytes[2..4],
+                pages:                      &bytes[4..6],
+                entries_relocation_table:   &bytes[6..8],
+                header_size:                &bytes[8..10],
+                min_alloc:                  &bytes[10..12],
+                max_alloc:                  &bytes[12..14],
+                initial_ss:                 &bytes[14..16],
+                initial_sp:                 &bytes[16..18],
+                checksum:                   &bytes[18..20],
+                initial_ip:                 &bytes[20..22],
+                initial_cs:                 &bytes[22..24],
+                reloc_table_address:        &bytes[24..26],
+                overlay:                    &bytes[26..28],
                 pe_offset,
             };
             let symbol_table_offset_bytes = &bytes[pe_offset + 12..pe_offset + 16];
@@ -570,14 +570,14 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             
             //Extracting the PE Header
             let file_pe_header: PEHeader = PEHeader {
-                magic: &bytes[pe_offset..pe_offset + 4],
-                machine: &bytes[pe_offset + 4..pe_offset + 6],
-                section_count: &bytes[pe_offset + 6..pe_offset + 8],
-                timestamp: &bytes[pe_offset + 8..pe_offset + 12],
-                symbol_table_pointer: symbol_table_pointer,
-                symbol_count: symbol_count,
-                optional_header_size: &bytes[pe_offset + 20..pe_offset + 22],
-                characteristics: &bytes[pe_offset + 22..pe_offset + 24],
+                magic:                      &bytes[pe_offset..pe_offset + 4],
+                machine:                    &bytes[pe_offset + 4..pe_offset + 6],
+                section_count:              &bytes[pe_offset + 6..pe_offset + 8],
+                timestamp:                  &bytes[pe_offset + 8..pe_offset + 12],
+                symbol_table_pointer:       symbol_table_pointer,
+                symbol_count:               symbol_count,
+                optional_header_size:       &bytes[pe_offset + 20..pe_offset + 22],
+                characteristics:            &bytes[pe_offset + 22..pe_offset + 24],
             };
 
             let code_size_bytes = &bytes[pe_offset + 28..pe_offset + 32];
@@ -590,39 +590,39 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             //Extracting the PE Optionnal header
             let file_optional_header: OptionalHeader = OptionalHeader {
-                magic: &bytes[pe_offset + 24..pe_offset + 26],
-                major_linker_version: &bytes[pe_offset + 26..pe_offset + 27],
-                minor_linker_version: &bytes[pe_offset + 27..pe_offset + 28],
+                magic:                      &bytes[pe_offset + 24..pe_offset + 26],
+                major_linker_version:       &bytes[pe_offset + 26..pe_offset + 27],
+                minor_linker_version:       &bytes[pe_offset + 27..pe_offset + 28],
                 code_size: code_size,
-                initialized_data_size: &bytes[pe_offset + 32..pe_offset + 36],
-                uninitialized_data_size: &bytes[pe_offset + 36..pe_offset + 40],
-                entry_point_address: &bytes[pe_offset + 40..pe_offset + 44],
-                base_of_code: &bytes[pe_offset + 44..pe_offset + 48],
-                base_of_data: &bytes[pe_offset + 48..pe_offset + 52],
-                image_base: &bytes[pe_offset + 52..pe_offset + 56],
-                section_alignment: &bytes[pe_offset + 56..pe_offset + 60],
-                file_alignment: &bytes[pe_offset + 60..pe_offset + 64],
-                major_os_version: &bytes[pe_offset + 64..pe_offset + 66],
-                minor_os_version: &bytes[pe_offset + 66..pe_offset + 68],
-                major_image_version: &bytes[pe_offset + 68..pe_offset + 70],
-                minor_image_version: &bytes[pe_offset + 70..pe_offset + 72],
-                major_subsystem_version: &bytes[pe_offset + 72..pe_offset + 74],
-                minor_subsystem_version: &bytes[pe_offset + 74..pe_offset + 76],
-                win32_version_value: &bytes[pe_offset + 76..pe_offset + 80],
-                image_size: &bytes[pe_offset + 80..pe_offset + 84],
-                headers_size: &bytes[pe_offset + 84..pe_offset + 88],
-                checksum: &bytes[pe_offset + 88..pe_offset + 92],
-                subsystem: &bytes[pe_offset + 92..pe_offset + 94],
-                dll_characteristics: &bytes[pe_offset + 94..pe_offset + 96],
-                stack_reserve_size: &bytes[pe_offset + 96..pe_offset + 100],
-                stack_commit_size: &bytes[pe_offset + 100..pe_offset + 104],
-                heap_reserve_size: &bytes[pe_offset + 104..pe_offset + 108],
-                heap_commit_size: &bytes[pe_offset + 108..pe_offset + 112],
-                loader_flags: &bytes[pe_offset + 112..pe_offset + 116],
-                number_of_rva_and_sizes: &bytes[pe_offset + 116..pe_offset + 120],
+                initialized_data_size:      &bytes[pe_offset + 32..pe_offset + 36],
+                uninitialized_data_size:    &bytes[pe_offset + 36..pe_offset + 40],
+                entry_point_address:        &bytes[pe_offset + 40..pe_offset + 44],
+                base_of_code:               &bytes[pe_offset + 44..pe_offset + 48],
+                base_of_data:               &bytes[pe_offset + 48..pe_offset + 52],
+                image_base:                 &bytes[pe_offset + 52..pe_offset + 56],
+                section_alignment:          &bytes[pe_offset + 56..pe_offset + 60],
+                file_alignment:             &bytes[pe_offset + 60..pe_offset + 64],
+                major_os_version:           &bytes[pe_offset + 64..pe_offset + 66],
+                minor_os_version:           &bytes[pe_offset + 66..pe_offset + 68],
+                major_image_version:        &bytes[pe_offset + 68..pe_offset + 70],
+                minor_image_version:        &bytes[pe_offset + 70..pe_offset + 72],
+                major_subsystem_version:    &bytes[pe_offset + 72..pe_offset + 74],
+                minor_subsystem_version:    &bytes[pe_offset + 74..pe_offset + 76],
+                win32_version_value:        &bytes[pe_offset + 76..pe_offset + 80],
+                image_size:                 &bytes[pe_offset + 80..pe_offset + 84],
+                headers_size:               &bytes[pe_offset + 84..pe_offset + 88],
+                checksum:                   &bytes[pe_offset + 88..pe_offset + 92],
+                subsystem:                  &bytes[pe_offset + 92..pe_offset + 94],
+                dll_characteristics:        &bytes[pe_offset + 94..pe_offset + 96],
+                stack_reserve_size:         &bytes[pe_offset + 96..pe_offset + 100],
+                stack_commit_size:          &bytes[pe_offset + 100..pe_offset + 104],
+                heap_reserve_size:          &bytes[pe_offset + 104..pe_offset + 108],
+                heap_commit_size:           &bytes[pe_offset + 108..pe_offset + 112],
+                loader_flags:               &bytes[pe_offset + 112..pe_offset + 116],
+                number_of_rva_and_sizes:    &bytes[pe_offset + 116..pe_offset + 120],
                 data_directory: DataDirectoryEntry {
-                    virtual_address: &bytes[pe_offset + 120..pe_offset + 124],
-                    size: &bytes[pe_offset + 124..pe_offset + 128],
+                    virtual_address:        &bytes[pe_offset + 120..pe_offset + 124],
+                    size:                   &bytes[pe_offset + 124..pe_offset + 128],
                 },
             };
     
@@ -638,11 +638,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
                 symbol_table.symbols.push(Symbol {
                     name,
-                    value: &bytes[symbol_table_pointer + 8 + offset..symbol_table_pointer + 12 + offset],
-                    section_number: &bytes[symbol_table_pointer + 12 + offset..symbol_table_pointer + 14 + offset],
-                    data_type: &bytes[symbol_table_pointer + 14 + offset..symbol_table_pointer + 16 + offset],
-                    storage_class: &bytes[symbol_table_pointer + 16 + offset..symbol_table_pointer + 17 + offset],
-                    number_aux_symbols: &bytes[symbol_table_pointer + 17 + offset..symbol_table_pointer + 18 + offset],
+                    value:                  &bytes[symbol_table_pointer + 8 + offset..symbol_table_pointer + 12 + offset],
+                    section_number:         &bytes[symbol_table_pointer + 12 + offset..symbol_table_pointer + 14 + offset],
+                    data_type:              &bytes[symbol_table_pointer + 14 + offset..symbol_table_pointer + 16 + offset],
+                    storage_class:          &bytes[symbol_table_pointer + 16 + offset..symbol_table_pointer + 17 + offset],
+                    number_aux_symbols:     &bytes[symbol_table_pointer + 17 + offset..symbol_table_pointer + 18 + offset],
                 });
                 offset += 18;
             }
@@ -656,45 +656,45 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
-                magic: &bytes[0..4],
-                class: &bytes[4..5],
-                data: &bytes[5..6],
-                version: &bytes[6..7],
-                os_abi: &bytes[7..8],
-                abi_version: &bytes[8..9],
-                padding: &bytes[9..16],
+                magic:          &bytes[0..4],
+                class:          &bytes[4..5],
+                data:           &bytes[5..6],
+                version:        &bytes[6..7],
+                os_abi:         &bytes[7..8],
+                abi_version:    &bytes[8..9],
+                padding:        &bytes[9..16],
             };
             let file_info_header = if file_info_identification.class == b"\x01" {
                 ELFHeader {
-                    file_type: &bytes[16..18],
-                    machine: &bytes[18..20],
-                    version: &bytes[20..22],
-                    entry_point: &bytes[22..26],
-                    program_header_offset: &bytes[26..30],
-                    section_header_offset: &bytes[30..34],
-                    flags: &bytes[34..38],
-                    header_size: &bytes[38..40],
-                    program_header_entry_size: &bytes[40..42],
-                    program_header_entry_count: &bytes[42..44],
-                    section_header_entry_size: &bytes[44..46],
-                    section_header_entry_count: &bytes[46..48],
-                    section_name_string_table_index: &bytes[48..50],
+                    file_type:                          &bytes[16..18],
+                    machine:                            &bytes[18..20],
+                    version:                            &bytes[20..22],
+                    entry_point:                        &bytes[22..26],
+                    program_header_offset:              &bytes[26..30],
+                    section_header_offset:              &bytes[30..34],
+                    flags:                              &bytes[34..38],
+                    header_size:                        &bytes[38..40],
+                    program_header_entry_size:          &bytes[40..42],
+                    program_header_entry_count:         &bytes[42..44],
+                    section_header_entry_size:          &bytes[44..46],
+                    section_header_entry_count:         &bytes[46..48],
+                    section_name_string_table_index:    &bytes[48..50],
                 }
             } else {
                 ELFHeader {
-                    file_type: &bytes[16..18],
-                    machine: &bytes[18..20],
-                    version: &bytes[20..22],
-                    entry_point: &bytes[22..30],
-                    program_header_offset: &bytes[30..38],
-                    section_header_offset: &bytes[38..46],
-                    flags: &bytes[46..50],
-                    header_size: &bytes[50..52],
-                    program_header_entry_size: &bytes[52..54],
-                    program_header_entry_count: &bytes[54..56],
-                    section_header_entry_size: &bytes[56..58],
-                    section_header_entry_count: &bytes[58..60],
-                    section_name_string_table_index: &bytes[60..62],
+                    file_type:                          &bytes[16..18],
+                    machine:                            &bytes[18..20],
+                    version:                            &bytes[20..22],
+                    entry_point:                        &bytes[22..30],
+                    program_header_offset:              &bytes[30..38],
+                    section_header_offset:              &bytes[38..46],
+                    flags:                              &bytes[46..50],
+                    header_size:                        &bytes[50..52],
+                    program_header_entry_size:          &bytes[52..54],
+                    program_header_entry_count:         &bytes[54..56],
+                    section_header_entry_size:          &bytes[56..58],
+                    section_header_entry_count:         &bytes[58..60],
+                    section_name_string_table_index:    &bytes[60..62],
                 }
             };
             let file_mz_header: FileInfoELF = FileInfoELF {
@@ -708,13 +708,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
             let file_mz_header: MachOHeader = MachOHeader {
-                magic: &bytes[0..4],
-                cputype: &bytes[4..8],
-                cpusubtype: &bytes[8..12],
-                ftype: &bytes[12..16],
-                lcnum: &bytes[16..20],
-                lcsize: &bytes[20..24],
-                flags: &bytes[24..28],
+                magic:          &bytes[0..4],
+                cputype:        &bytes[4..8],
+                cpusubtype:     &bytes[8..12],
+                ftype:          &bytes[12..16],
+                lcnum:          &bytes[16..20],
+                lcsize:         &bytes[20..24],
+                flags:          &bytes[24..28],
             };
             println!("File Infos: {:?}", file_mz_header);
             //TODO: Extract code
@@ -722,13 +722,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
         "Mach-O binary (reverse byte ordering scheme, 32-bit)"
         | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
             let file_mz_header: MachOHeader = MachOHeader {
-                magic: &reverse_bytes(&bytes[0..4]),
-                cputype: &reverse_bytes(&bytes[4..8]),
+                magic:      &reverse_bytes(&bytes[0..4]),
+                cputype:    &reverse_bytes(&bytes[4..8]),
                 cpusubtype: &reverse_bytes(&bytes[8..12]),
-                ftype: &reverse_bytes(&bytes[12..16]),
-                lcnum: &reverse_bytes(&bytes[16..20]),
-                lcsize: &reverse_bytes(&bytes[20..24]),
-                flags: &reverse_bytes(&bytes[24..28]),
+                ftype:      &reverse_bytes(&bytes[12..16]),
+                lcnum:      &reverse_bytes(&bytes[16..20]),
+                lcsize:     &reverse_bytes(&bytes[20..24]),
+                flags:      &reverse_bytes(&bytes[24..28]),
             };
             println!("File Infos: {:?}", file_mz_header);
         }
