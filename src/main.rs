@@ -422,6 +422,9 @@ enum LoadCommandData<'a> {
     Thread(ThreadCommand<'a>),
     EncryptionInfo(EncryptionInfoCommand<'a>),
     VersionMin(VersionMinCommand<'a>),
+    RunPath(RunPathCommand<'a>),
+    DyldInfo(DyldInfoCommand<'a>),
+    LinkEditData(LinkEditDataCommand<'a>)
     
 }
 //todo: Update cmd list
