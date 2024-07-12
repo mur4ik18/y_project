@@ -118,7 +118,7 @@ struct OptionalHeader<'a> {
     magic: &'a [u8],
     major_linker_version: &'a [u8],
     minor_linker_version: &'a [u8],
-    code_size: &'a [u8],
+    code_size: u32,
     initialized_data_size: &'a [u8],
     uninitialized_data_size: &'a [u8],
     entry_point_address: &'a [u8],
@@ -577,12 +577,20 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 characteristics: &bytes[pe_offset + 22..pe_offset + 24],
             };
 
+            let code_size_bytes = &bytes[pe_offset + 28..pe_offset + 32];
+            let code_size = u32::from_le_bytes([
+                code_size_bytes[0],
+                code_size_bytes[1],
+                code_size_bytes[2],
+                code_size_bytes[3]
+                ]);
+
             //Extracting the PE Optionnal header
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic: &bytes[pe_offset + 24..pe_offset + 26],
                 major_linker_version: &bytes[pe_offset + 26..pe_offset + 27],
                 minor_linker_version: &bytes[pe_offset + 27..pe_offset + 28],
-                code_size: &bytes[pe_offset + 28..pe_offset + 32],
+                code_size: code_size,
                 initialized_data_size: &bytes[pe_offset + 32..pe_offset + 36],
                 uninitialized_data_size: &bytes[pe_offset + 36..pe_offset + 40],
                 entry_point_address: &bytes[pe_offset + 40..pe_offset + 44],
@@ -636,9 +644,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 offset += 18;
             }
 
+            let extracted_code = &bytes[4832..4832 + code_size as usize];
 
             println!("File Infos: {:?} {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table, file_optional_header);
-
+            
+            println!("{:?}", extracted_code);
             
         }
         "Executable and Linkable Format (ELF)" => {
@@ -688,6 +698,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 identification: file_info_identification,
                 header: file_info_header,
             };
+
+            
             println!("File Infos: {:?}", file_mz_header);
             //TODO: Extract Code
         }
