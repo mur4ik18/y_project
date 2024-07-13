@@ -121,7 +121,7 @@ struct OptionalHeader<'a> {
     code_size: u32,
     initialized_data_size: &'a [u8],
     uninitialized_data_size: &'a [u8],
-    entry_point_address: &'a [u8],
+    entry_point_address: usize,
     base_of_code: &'a [u8],
     base_of_data: &'a [u8],
     image_base: &'a [u8],
@@ -589,6 +589,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 ]);
 
             //Extracting the PE Optionnal header
+            let entry_point_address_bytes = &bytes[pe_offset + 36..pe_offset + 40];
+            let entry_point_address = u32::from_le_bytes([
+                entry_point_address_bytes[0],
+                entry_point_address_bytes[1],
+                entry_point_address_bytes[2],
+                entry_point_address_bytes[3],
+            ]) as usize;
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic:                      &bytes[pe_offset + 24..pe_offset + 26],
                 major_linker_version:       &bytes[pe_offset + 26..pe_offset + 27],
@@ -596,7 +603,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 code_size: code_size,
                 initialized_data_size:      &bytes[pe_offset + 32..pe_offset + 36],
                 uninitialized_data_size:    &bytes[pe_offset + 36..pe_offset + 40],
-                entry_point_address:        &bytes[pe_offset + 40..pe_offset + 44],
+                entry_point_address:        entry_point_address,
                 base_of_code:               &bytes[pe_offset + 44..pe_offset + 48],
                 base_of_data:               &bytes[pe_offset + 48..pe_offset + 52],
                 image_base:                 &bytes[pe_offset + 52..pe_offset + 56],
@@ -647,7 +654,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 offset += 18;
             }
 
-            let extracted_code = &bytes[4832..4832 + code_size as usize];
+            let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
             println!("File Infos: {:?} {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table, file_optional_header);
             
