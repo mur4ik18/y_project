@@ -50,3 +50,4 @@ https://www.labs.cs.uregina.ca/301/ARM-addressing/lecture.html
 https://lief.re/doc/latest/tutorials/11_macho_modification.html
 https://en.wikipedia.org/wiki/List_of_file_signatures
 https://doc.rust-lang.org/book/
+https://en.wikipedia.org/wiki/Portable_Executable#/media/File:Portable_Executable_32_bit_Structure_in_SVG_fixed.svg
