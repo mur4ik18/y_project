@@ -53,7 +53,7 @@ const SIGNATURES: [Signature; 7] = [
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct MZHeader<'a> {
+struct DOSHeader<'a> {
     magic: &'a [u8],
     extra_bytes: &'a [u8],
     pages: &'a [u8],
@@ -73,7 +73,7 @@ struct MZHeader<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct PEHeader<'a> {
+struct COFFHeader<'a> {
     magic: &'a [u8],
     machine: &'a [u8],
     section_count: &'a [u8],
@@ -115,6 +115,7 @@ struct DataDirectory<'a> {
 #[allow(dead_code)]
 #[derive(Debug)]
 struct OptionalHeader<'a> {
+    //Standard COFF fields
     magic: &'a [u8],
     major_linker_version: &'a [u8],
     minor_linker_version: &'a [u8],
@@ -124,6 +125,7 @@ struct OptionalHeader<'a> {
     entry_point_address: usize,
     base_of_code: &'a [u8],
     base_of_data: &'a [u8],
+    //Windows Specific Fields
     image_base: &'a [u8],
     section_alignment: &'a [u8],
     file_alignment: &'a [u8],
@@ -145,14 +147,15 @@ struct OptionalHeader<'a> {
     heap_commit_size: &'a [u8],
     loader_flags: &'a [u8],
     number_of_rva_and_sizes: &'a [u8],
+    //Data directories
     data_directory: DataDirectoryEntry<'a>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
 struct PEFile<'a> {
-    mz_header: MZHeader<'a>,
-    pe_header: PEHeader<'a>,
+    mz_header: DOSHeader<'a>,
+    pe_header: COFFHeader<'a>,
     optional_header: OptionalHeader<'a>,
 }
 
@@ -460,10 +463,10 @@ fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
 
 fn read_file(file_path: &String) -> Vec<u8> {
     let bytes = fs::read(file_path.to_owned()).unwrap();
-    for byte in bytes.iter() {
-        print!("{:X} ", byte);
-    }
-    println!();
+    // for byte in bytes.iter() {
+    //     print!("{:X} ", byte);
+    // }
+    // println!();
     bytes
 }
 
@@ -535,7 +538,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             ]) as usize;
             
             //Extracting the MZ Header
-            let file_mz_header: MZHeader = MZHeader {
+            let file_dos_header: DOSHeader = DOSHeader {
                 magic:                      &bytes[0..2],
                 extra_bytes:                &bytes[2..4],
                 pages:                      &bytes[4..6],
@@ -552,6 +555,9 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 overlay:                    &bytes[26..28],
                 pe_offset,
             };
+
+            let file_dos_stub = &bytes[64..pe_offset];
+
             let symbol_table_offset_bytes = &bytes[pe_offset + 12..pe_offset + 16];
             let symbol_table_pointer = u32::from_le_bytes([
                 symbol_table_offset_bytes[0],
@@ -569,7 +575,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             ]);
             
             //Extracting the PE Header
-            let file_pe_header: PEHeader = PEHeader {
+            let file_coff_header: COFFHeader = COFFHeader {
                 magic:                      &bytes[pe_offset..pe_offset + 4],
                 machine:                    &bytes[pe_offset + 4..pe_offset + 6],
                 section_count:              &bytes[pe_offset + 6..pe_offset + 8],
@@ -596,6 +602,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 entry_point_address_bytes[2],
                 entry_point_address_bytes[3],
             ]) as usize;
+            
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic:                      &bytes[pe_offset + 24..pe_offset + 26],
                 major_linker_version:       &bytes[pe_offset + 26..pe_offset + 27],
@@ -639,8 +646,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             };
                 
             let mut offset:usize = 0;
-            for _i in 0..file_pe_header.symbol_count {
-                let name_bytes = &bytes[file_pe_header.symbol_table_pointer + offset..file_pe_header.symbol_table_pointer + 8 + offset];
+            for _i in 0..file_coff_header.symbol_count {
+                let name_bytes = &bytes[file_coff_header.symbol_table_pointer + offset..file_coff_header.symbol_table_pointer + 8 + offset];
                 let name = String::from_utf8_lossy(name_bytes).trim_end_matches('\0').to_string();
 
                 symbol_table.symbols.push(Symbol {
@@ -656,9 +663,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
-            println!("File Infos: {:?} {:?} {:?} {:?}", file_mz_header, file_pe_header, symbol_table, file_optional_header);
-            
-            println!("{:?}", extracted_code);
+            println!("Dos Header: {:x?}", file_dos_header);
+            println!("Dos Stub: {:x?}", file_dos_stub);
+            println!("Coff Header: {:x?}", file_coff_header);
+            println!("Symbol Table: {:x?}", symbol_table);
+            println!("Optionnal Header: {:x?}", file_optional_header);
+            println!("Extracted Code: {:x?}", extracted_code);
             
         }
         "Executable and Linkable Format (ELF)" => {
@@ -704,17 +714,17 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     section_name_string_table_index:    &bytes[60..62],
                 }
             };
-            let file_mz_header: FileInfoELF = FileInfoELF {
+            let file_dos_header: FileInfoELF = FileInfoELF {
                 identification: file_info_identification,
                 header: file_info_header,
             };
 
             
-            println!("File Infos: {:?}", file_mz_header);
+            println!("File Infos: {:?}", file_dos_header);
             //TODO: Extract Code
         }
         "Mach-O binary (32-bit)" | "Mach-O binary (64-bit)" => {
-            let file_mz_header: MachOHeader = MachOHeader {
+            let file_dos_header: MachOHeader = MachOHeader {
                 magic:          &bytes[0..4],
                 cputype:        &bytes[4..8],
                 cpusubtype:     &bytes[8..12],
@@ -723,12 +733,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 lcsize:         &bytes[20..24],
                 flags:          &bytes[24..28],
             };
-            println!("File Infos: {:?}", file_mz_header);
+            println!("File Infos: {:?}", file_dos_header);
             //TODO: Extract code
         }
         "Mach-O binary (reverse byte ordering scheme, 32-bit)"
         | "Mach-O binary (reverse byte ordering scheme, 64-bit)" => {
-            let file_mz_header: MachOHeader = MachOHeader {
+            let file_dos_header: MachOHeader = MachOHeader {
                 magic:      &reverse_bytes(&bytes[0..4]),
                 cputype:    &reverse_bytes(&bytes[4..8]),
                 cpusubtype: &reverse_bytes(&bytes[8..12]),
@@ -737,7 +747,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 lcsize:     &reverse_bytes(&bytes[20..24]),
                 flags:      &reverse_bytes(&bytes[24..28]),
             };
-            println!("File Infos: {:?}", file_mz_header);
+            println!("File Infos: {:?}", file_dos_header);
         }
         "Java class file, Mach-O Fat Binary" => {
             //TODO: Search infos
