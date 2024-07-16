@@ -80,7 +80,7 @@ struct COFFHeader<'a> {
     timestamp: &'a [u8],
     symbol_table_pointer: usize,
     symbol_count: u32,
-    optional_header_size: &'a [u8],
+    optional_header_size: usize,
     characteristics: &'a [u8],
 }
 
@@ -176,6 +176,26 @@ struct SymbolTable<'a> {
     symbols:  Vec<Symbol<'a>>,
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct SectionTable<'a> {
+    sections: Vec<Section<'a>>
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct Section<'a> {
+    name: &'a [u8],
+    virtuel_size: &'a [u8],
+    virtual_address: &'a [u8],
+    raw_data_size: &'a [u8],
+    ptr_to_raw_data: &'a [u8],
+    ptr_to_relocations: &'a [u8],
+    ptr_to_linenumbers: &'a [u8],
+    number_of_relocations: &'a [u8],
+    number_of_linenumbers: &'a [u8],
+    characteristics: &'a [u8]
+}
 
 /************************************************************************************/
 /******************************** ELF structure *************************************/
@@ -262,7 +282,7 @@ struct SectionCommand<'a> {
     segname: &'a [u8],
     addr: &'a [u8],
     size: &'a [u8],
-    offset: &'a [u8],
+    symbol_table_for_offset: &'a [u8],
     align: &'a [u8],
     reloff: &'a [u8],
     nreloc: &'a [u8],
@@ -294,7 +314,7 @@ struct SymtabCommand<'a> {
 #[derive(Debug)]
 struct SymsegCommand<'a> {
     load_cmd: LoadCommand <'a>,
-    offset: &'a [u8],
+    symbol_table_for_offset: &'a [u8],
     size: &'a [u8]
 }
 
@@ -408,7 +428,7 @@ struct DyldInfoCommand<'a>{
 #[derive(Debug)]
 struct RunPathCommand<'a>{
     load_cmd: LoadCommand <'a>,
-    offset: &'a[u8],
+    symbol_table_for_offset: &'a[u8],
 }
 
 #[allow(dead_code)]
@@ -506,11 +526,11 @@ fn get_sign(bytes: &[u8]) -> String {
 
     let mut file_signature: String = String::from("unknown");
 
-    let mut offset = 0;
-    while offset < bytes.len() {
-        let bytes_copy = std::cmp::min(buffer.len(), bytes.len() - offset);
+    let mut symbol_table_for_offset = 0;
+    while symbol_table_for_offset < bytes.len() {
+        let bytes_copy = std::cmp::min(buffer.len(), bytes.len() - symbol_table_for_offset);
 
-        buffer[..bytes_copy].copy_from_slice(&bytes[offset..offset + bytes_copy]);
+        buffer[..bytes_copy].copy_from_slice(&bytes[symbol_table_for_offset..symbol_table_for_offset + bytes_copy]);
 
         for signature in SIGNATURES.iter() {
             if bytes_copy >= signature.signature.len()
@@ -520,7 +540,7 @@ fn get_sign(bytes: &[u8]) -> String {
             }
         }
 
-        offset += bytes_copy;
+        symbol_table_for_offset += bytes_copy;
     }
     println!("signature trouvee: {}", file_signature);
     file_signature
@@ -574,6 +594,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 symbol_count_bytes[3],
             ]);
             
+            let optional_header_size_bytes = &bytes[pe_offset + 20..pe_offset + 22];
+            let optional_header_size = u16::from_le_bytes([
+                optional_header_size_bytes[0],
+                optional_header_size_bytes[1],
+            ]) as usize;
+
             //Extracting the PE Header
             let file_coff_header: COFFHeader = COFFHeader {
                 magic:                      &bytes[pe_offset..pe_offset + 4],
@@ -582,7 +608,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 timestamp:                  &bytes[pe_offset + 8..pe_offset + 12],
                 symbol_table_pointer:       symbol_table_pointer,
                 symbol_count:               symbol_count,
-                optional_header_size:       &bytes[pe_offset + 20..pe_offset + 22],
+                optional_header_size:       optional_header_size,
                 characteristics:            &bytes[pe_offset + 22..pe_offset + 24],
             };
 
@@ -645,21 +671,27 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 symbols: Vec::new(),
             };
                 
-            let mut offset:usize = 0;
+            let mut symbol_table_for_offset:usize = 0;
             for _i in 0..file_coff_header.symbol_count {
-                let name_bytes = &bytes[file_coff_header.symbol_table_pointer + offset..file_coff_header.symbol_table_pointer + 8 + offset];
+                let name_bytes = &bytes[file_coff_header.symbol_table_pointer + symbol_table_for_offset..file_coff_header.symbol_table_pointer + 8 + symbol_table_for_offset];
                 let name = String::from_utf8_lossy(name_bytes).trim_end_matches('\0').to_string();
 
                 symbol_table.symbols.push(Symbol {
                     name,
-                    value:                  &bytes[symbol_table_pointer + 8 + offset..symbol_table_pointer + 12 + offset],
-                    section_number:         &bytes[symbol_table_pointer + 12 + offset..symbol_table_pointer + 14 + offset],
-                    data_type:              &bytes[symbol_table_pointer + 14 + offset..symbol_table_pointer + 16 + offset],
-                    storage_class:          &bytes[symbol_table_pointer + 16 + offset..symbol_table_pointer + 17 + offset],
-                    number_aux_symbols:     &bytes[symbol_table_pointer + 17 + offset..symbol_table_pointer + 18 + offset],
+                    value:                  &bytes[symbol_table_pointer + 8 + symbol_table_for_offset..symbol_table_pointer + 12 + symbol_table_for_offset],
+                    section_number:         &bytes[symbol_table_pointer + 12 + symbol_table_for_offset..symbol_table_pointer + 14 + symbol_table_for_offset],
+                    data_type:              &bytes[symbol_table_pointer + 14 + symbol_table_for_offset..symbol_table_pointer + 16 + symbol_table_for_offset],
+                    storage_class:          &bytes[symbol_table_pointer + 16 + symbol_table_for_offset..symbol_table_pointer + 17 + symbol_table_for_offset],
+                    number_aux_symbols:     &bytes[symbol_table_pointer + 17 + symbol_table_for_offset..symbol_table_pointer + 18 + symbol_table_for_offset],
                 });
-                offset += 18;
+                symbol_table_for_offset += 18;
             }
+
+            let mut section_table = SectionTable{
+                sections: Vec::new(),
+            };
+
+            let section_table_offset = pe_offset + file_coff_header.optional_header_size + 24;             
 
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
@@ -669,7 +701,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             println!("Symbol Table: {:x?}", symbol_table);
             println!("Optionnal Header: {:x?}", file_optional_header);
             println!("Extracted Code: {:x?}", extracted_code);
-            
+            println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
