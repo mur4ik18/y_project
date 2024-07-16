@@ -186,7 +186,7 @@ struct SectionTable<'a> {
 #[derive(Debug)]
 struct Section<'a> {
     name: &'a [u8],
-    virtuel_size: &'a [u8],
+    virtual_size: &'a [u8],
     virtual_address: &'a [u8],
     raw_data_size: &'a [u8],
     ptr_to_raw_data: &'a [u8],
@@ -667,19 +667,34 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let section_table_offset = pe_offset + file_coff_header.optional_header_size + 24;    
 
-            for _i in 0..file_coff_header.section_count {
+            let mut for_offset_section_table: usize = 0;
 
+            for _i in 0..file_coff_header.section_count {
+                section_table.sections.push(Section {
+                    name: &bytes[section_table_offset + for_offset_section_table .. section_table_offset + 8 + for_offset_section_table],
+                    virtual_size:  &bytes[section_table_offset + 8 +  for_offset_section_table .. section_table_offset + 12 + for_offset_section_table],
+                    virtual_address: &bytes[section_table_offset + 12 +  for_offset_section_table .. section_table_offset + 16 + for_offset_section_table],
+                    raw_data_size: &bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table],
+                    ptr_to_raw_data: &bytes[section_table_offset + 20 +  for_offset_section_table .. section_table_offset + 24 + for_offset_section_table],
+                    ptr_to_relocations: &bytes[section_table_offset + 24 +  for_offset_section_table .. section_table_offset + 28 + for_offset_section_table],
+                    ptr_to_linenumbers: &bytes[section_table_offset + 28 +  for_offset_section_table .. section_table_offset + 32 + for_offset_section_table],
+                    number_of_relocations: &bytes[section_table_offset + 32 +  for_offset_section_table .. section_table_offset + 34 + for_offset_section_table],
+                    number_of_linenumbers: &bytes[section_table_offset + 34 +  for_offset_section_table .. section_table_offset + 36 + for_offset_section_table],
+                    characteristics: &bytes[section_table_offset + 36 +  for_offset_section_table .. section_table_offset + 40 + for_offset_section_table],
+                });
+                for_offset_section_table += 40;
             }         
 
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
-            println!("Dos Header: {:x?}", file_dos_header);
-            println!("Dos Stub: {:x?}", file_dos_stub);
-            println!("Coff Header: {:x?}", file_coff_header);
-            println!("Symbol Table: {:x?}", symbol_table);
-            println!("Optionnal Header: {:x?}", file_optional_header);
-            println!("Extracted Code: {:x?}", extracted_code);
-            println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
+            // println!("Dos Header: {:x?}", file_dos_header);
+            // println!("Dos Stub: {:x?}", file_dos_stub);
+            // println!("Coff Header: {:x?}", file_coff_header);
+            // println!("Symbol Table: {:x?}", symbol_table);
+            // println!("Optionnal Header: {:x?}", file_optional_header);
+            // println!("Extracted Code: {:x?}", extracted_code);
+            // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
+            println!("Section Table: {:x?}", section_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
