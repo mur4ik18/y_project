@@ -76,10 +76,10 @@ struct DOSHeader<'a> {
 struct COFFHeader<'a> {
     magic: &'a [u8],
     machine: &'a [u8],
-    section_count: &'a [u8],
+    section_count: usize,
     timestamp: &'a [u8],
     symbol_table_pointer: usize,
-    symbol_count: u32,
+    symbol_count: usize,
     optional_header_size: usize,
     characteristics: &'a [u8],
 }
@@ -119,7 +119,7 @@ struct OptionalHeader<'a> {
     magic: &'a [u8],
     major_linker_version: &'a [u8],
     minor_linker_version: &'a [u8],
-    code_size: u32,
+    code_size: usize,
     initialized_data_size: &'a [u8],
     uninitialized_data_size: &'a [u8],
     entry_point_address: usize,
@@ -477,6 +477,14 @@ struct ClassFile<'a> {
     //todo add attribute struct
 }
 
+fn le_to_usize(bytes: &[u8]) -> usize {
+    let mut array = [0u8; std::mem::size_of::<usize>()];
+    for (i, &byte) in bytes.iter().enumerate() {
+        array[i] = byte;
+    }
+    usize::from_le_bytes(array)
+}
+
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
 }
@@ -549,13 +557,7 @@ fn get_sign(bytes: &[u8]) -> String {
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
     match file_signature {
         "DOS MZ executable" => {
-            let pe_offset_bytes = &bytes[60..64];
-            let pe_offset = u32::from_le_bytes([
-                pe_offset_bytes[0],
-                pe_offset_bytes[1],
-                pe_offset_bytes[2],
-                pe_offset_bytes[3],
-            ]) as usize;
+            let pe_offset = le_to_usize(&bytes[60..64]);
             
             //Extracting the MZ Header
             let file_dos_header: DOSHeader = DOSHeader {
@@ -578,33 +580,17 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let file_dos_stub = &bytes[64..pe_offset];
 
-            let symbol_table_offset_bytes = &bytes[pe_offset + 12..pe_offset + 16];
-            let symbol_table_pointer = u32::from_le_bytes([
-                symbol_table_offset_bytes[0],
-                symbol_table_offset_bytes[1],
-                symbol_table_offset_bytes[2],
-                symbol_table_offset_bytes[3],
-            ]) as usize;
+            let symbol_table_pointer = le_to_usize(&bytes[pe_offset + 12..pe_offset + 16]);
 
-            let symbol_count_bytes = &bytes[pe_offset + 16..pe_offset + 20];
-            let symbol_count = u32::from_le_bytes([
-                symbol_count_bytes[0],
-                symbol_count_bytes[1],
-                symbol_count_bytes[2],
-                symbol_count_bytes[3],
-            ]);
+            let symbol_count = le_to_usize(&bytes[pe_offset + 16..pe_offset + 20]);
             
-            let optional_header_size_bytes = &bytes[pe_offset + 20..pe_offset + 22];
-            let optional_header_size = u16::from_le_bytes([
-                optional_header_size_bytes[0],
-                optional_header_size_bytes[1],
-            ]) as usize;
+            let optional_header_size = le_to_usize(&bytes[pe_offset + 20..pe_offset + 22]);
 
             //Extracting the PE Header
             let file_coff_header: COFFHeader = COFFHeader {
                 magic:                      &bytes[pe_offset..pe_offset + 4],
                 machine:                    &bytes[pe_offset + 4..pe_offset + 6],
-                section_count:              &bytes[pe_offset + 6..pe_offset + 8],
+                section_count:              le_to_usize(&bytes[pe_offset + 6..pe_offset + 8]),
                 timestamp:                  &bytes[pe_offset + 8..pe_offset + 12],
                 symbol_table_pointer:       symbol_table_pointer,
                 symbol_count:               symbol_count,
@@ -612,22 +598,10 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 characteristics:            &bytes[pe_offset + 22..pe_offset + 24],
             };
 
-            let code_size_bytes = &bytes[pe_offset + 28..pe_offset + 32];
-            let code_size = u32::from_le_bytes([
-                code_size_bytes[0],
-                code_size_bytes[1],
-                code_size_bytes[2],
-                code_size_bytes[3]
-                ]);
+            let code_size = le_to_usize(&bytes[pe_offset + 28..pe_offset + 32]);
 
             //Extracting the PE Optionnal header
-            let entry_point_address_bytes = &bytes[pe_offset + 36..pe_offset + 40];
-            let entry_point_address = u32::from_le_bytes([
-                entry_point_address_bytes[0],
-                entry_point_address_bytes[1],
-                entry_point_address_bytes[2],
-                entry_point_address_bytes[3],
-            ]) as usize;
+            let entry_point_address = le_to_usize(&bytes[pe_offset + 36..pe_offset + 40]);
             
             let file_optional_header: OptionalHeader = OptionalHeader {
                 magic:                      &bytes[pe_offset + 24..pe_offset + 26],
@@ -691,7 +665,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 sections: Vec::new(),
             };
 
-            let section_table_offset = pe_offset + file_coff_header.optional_header_size + 24;             
+            let section_table_offset = pe_offset + file_coff_header.optional_header_size + 24;    
+
+            for _i in 0..file_coff_header.section_count {
+
+            }         
 
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
