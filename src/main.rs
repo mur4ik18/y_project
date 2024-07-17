@@ -185,7 +185,7 @@ struct SectionTable<'a> {
 #[allow(dead_code)]
 #[derive(Debug)]
 struct Section<'a> {
-    name: &'a [u8],
+    name: String,
     virtual_size: &'a [u8],
     virtual_address: &'a [u8],
     raw_data_size: &'a [u8],
@@ -195,6 +195,21 @@ struct Section<'a> {
     number_of_relocations: &'a [u8],
     number_of_linenumbers: &'a [u8],
     characteristics: &'a [u8]
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct COFFStringTable<'a> {
+    strings: Vec<COFFString<'a>>
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct COFFString<'a> {
+    length: usize,
+    structure_length: usize,
+    data_type: &'a[u8],
+    string: String
 }
 
 /************************************************************************************/
@@ -448,7 +463,6 @@ enum LoadCommandData<'a> {
     RunPath(RunPathCommand<'a>),
     DyldInfo(DyldInfoCommand<'a>),
     LinkEditData(LinkEditDataCommand<'a>)
-
 }
 
 
@@ -476,6 +490,11 @@ struct ClassFile<'a> {
     attributes_count: &'a [u8],
     //todo add attribute struct
 }
+
+/****************************************************************************************/
+/******************************** Code Functions ****************************************/
+/****************************************************************************************/
+
 
 fn le_to_usize(bytes: &[u8]) -> usize {
     let mut array = [0u8; std::mem::size_of::<usize>()];
@@ -671,7 +690,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             for _i in 0..file_coff_header.section_count {
                 section_table.sections.push(Section {
-                    name: &bytes[section_table_offset + for_offset_section_table .. section_table_offset + 8 + for_offset_section_table],
+                    name: String::from_utf8_lossy(&bytes[section_table_offset + for_offset_section_table .. section_table_offset + 8 + for_offset_section_table]).trim_end_matches('\0').to_string(),
                     virtual_size:  &bytes[section_table_offset + 8 +  for_offset_section_table .. section_table_offset + 12 + for_offset_section_table],
                     virtual_address: &bytes[section_table_offset + 12 +  for_offset_section_table .. section_table_offset + 16 + for_offset_section_table],
                     raw_data_size: &bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table],
@@ -685,6 +704,10 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 for_offset_section_table += 40;
             }         
 
+            for section in section_table.sections.iter() {
+                println!("{}", section.name);
+            }
+
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
             // println!("Dos Header: {:x?}", file_dos_header);
@@ -694,7 +717,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             // println!("Optionnal Header: {:x?}", file_optional_header);
             // println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-            println!("Section Table: {:x?}", section_table);
+             println!("Section Table: {:x?}", section_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
