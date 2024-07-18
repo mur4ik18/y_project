@@ -741,6 +741,10 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 length: le_to_usize(&bytes[string_table_offset..string_table_offset + 4]),
                 strings: Vec::new()
             };
+            
+            let entire_string_table = String::from_utf8_lossy(&bytes[string_table_offset+4..string_table_offset + string_table.length]);
+
+            string_table.strings = entire_string_table.split('\0').map(|s| s.to_string()).collect();
 
             //todo: Extract String table and tradure the /xx sections name to extract them
             // println!("Dos Header: {:x?}", file_dos_header);
@@ -751,7 +755,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             // println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
             // println!("Section Table: {:x?}", section_table);
-            println!("{}", string_table_offset);
             println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
