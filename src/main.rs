@@ -179,23 +179,24 @@ struct SymbolTable<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct SectionTable {
-    sections: Vec<Section>
+struct SectionTable<'a> {
+    sections: Vec<Section<'a>>
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct Section {
+struct Section<'a> {
     name: String,
     virtual_size: u32,
     virtual_address: u32,
-    raw_data_size: u32,
+    raw_data_size: usize,
     ptr_to_raw_data: usize,
     ptr_to_relocations: usize,
     ptr_to_linenumbers: usize,
     number_of_relocations: u16,
     number_of_linenumbers: u16,
-    characteristics: u32
+    characteristics: u32,
+    raw_data: &'a[u8]
 }
 
 #[allow(dead_code)]
@@ -701,38 +702,38 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             let mut for_offset_section_table: usize = 0;
 
             for _i in 0..file_coff_header.section_count {
+                let ptr_to_raw_data = le_to_usize(&bytes[section_table_offset + 20 +  for_offset_section_table .. section_table_offset + 24 + for_offset_section_table]);
+                let raw_data_size = le_to_usize(&bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table]);
                 section_table.sections.push(Section {
                     name: String::from_utf8_lossy(&bytes[section_table_offset + for_offset_section_table .. section_table_offset + 8 + for_offset_section_table]).trim_end_matches('\0').to_string(),
                     virtual_size: le_to_u32(&bytes[section_table_offset + 8 +  for_offset_section_table .. section_table_offset + 12 + for_offset_section_table]),
                     virtual_address: le_to_u32(&bytes[section_table_offset + 12 +  for_offset_section_table .. section_table_offset + 16 + for_offset_section_table]),
-                    raw_data_size: le_to_u32(&bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table]),
-                    ptr_to_raw_data: le_to_usize(&bytes[section_table_offset + 20 +  for_offset_section_table .. section_table_offset + 24 + for_offset_section_table]),
+                    raw_data_size: raw_data_size,
+                    ptr_to_raw_data: ptr_to_raw_data,
                     ptr_to_relocations: le_to_usize(&bytes[section_table_offset + 24 +  for_offset_section_table .. section_table_offset + 28 + for_offset_section_table]),
                     ptr_to_linenumbers: le_to_usize(&bytes[section_table_offset + 28 +  for_offset_section_table .. section_table_offset + 32 + for_offset_section_table]),
                     number_of_relocations: le_to_u16(&bytes[section_table_offset + 32 +  for_offset_section_table .. section_table_offset + 34 + for_offset_section_table]),
                     number_of_linenumbers: le_to_u16(&bytes[section_table_offset + 34 +  for_offset_section_table .. section_table_offset + 36 + for_offset_section_table]),
                     characteristics: le_to_u32(&bytes[section_table_offset + 36 +  for_offset_section_table .. section_table_offset + 40 + for_offset_section_table]),
+                    raw_data: &bytes[ptr_to_raw_data..ptr_to_raw_data+raw_data_size]
                 });
                 for_offset_section_table += 40;
             }         
-
+            let mut extracted_code: &[u8] = &[];
             for section in section_table.sections.iter() {
-                println!("{}", section.name);
-                if section.name == ".rdata" {
-                    
+                if section.name == ".text" {
+                    extracted_code = section.raw_data;
                 }
             }
-
-            let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
 
             // println!("Dos Header: {:x?}", file_dos_header);
             // println!("Dos Stub: {:x?}", file_dos_stub);
             // println!("Coff Header: {:x?}", file_coff_header);
             // println!("Symbol Table: {:x?}", symbol_table);
             // println!("Optionnal Header: {:x?}", file_optional_header);
-            // println!("Extracted Code: {:x?}", extracted_code);
+             println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-             println!("Section Table: {:x?}", section_table);
+            // println!("Section Table: {:x?}", section_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
