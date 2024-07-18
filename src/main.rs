@@ -185,6 +185,13 @@ struct SectionTable<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
+struct StringTable {
+    length: usize,
+    strings: Vec<String>
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
 struct Section<'a> {
     name: String,
     virtual_size: u32,
@@ -721,7 +728,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             }         
             let mut extracted_code: &[u8] = &[];
             for section in section_table.sections.iter() {
-                println!("{:?}",section);
                 match section.name.as_str() {
                     ".text" => extracted_code = section.raw_data,
 
@@ -729,14 +735,24 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 }
             }
 
+            let string_table_offset = symbol_table_pointer + (18 * symbol_count);
+
+            let mut string_table = StringTable{
+                length: le_to_usize(&bytes[string_table_offset..string_table_offset + 4]),
+                strings: Vec::new()
+            };
+
+            //todo: Extract String table and tradure the /xx sections name to extract them
             // println!("Dos Header: {:x?}", file_dos_header);
             // println!("Dos Stub: {:x?}", file_dos_stub);
             // println!("Coff Header: {:x?}", file_coff_header);
-            // println!("Symbol Table: {:x?}", symbol_table);
+            //println!("Symbol Table: {:x?}", symbol_table);
             // println!("Optionnal Header: {:x?}", file_optional_header);
             // println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
             // println!("Section Table: {:x?}", section_table);
+            println!("{}", string_table_offset);
+            println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
