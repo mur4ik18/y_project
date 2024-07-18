@@ -721,8 +721,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             }         
             let mut extracted_code: &[u8] = &[];
             for section in section_table.sections.iter() {
-                if section.name == ".text" {
-                    extracted_code = section.raw_data;
+                println!("{:?}",section);
+                match section.name.as_str() {
+                    ".text" => extracted_code = section.raw_data,
+
+                    _ => println!("Unknown section"),
                 }
             }
 
@@ -731,7 +734,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             // println!("Coff Header: {:x?}", file_coff_header);
             // println!("Symbol Table: {:x?}", symbol_table);
             // println!("Optionnal Header: {:x?}", file_optional_header);
-             println!("Extracted Code: {:x?}", extracted_code);
+            // println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
             // println!("Section Table: {:x?}", section_table);
         }
