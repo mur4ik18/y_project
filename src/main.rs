@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::convert::TryInto;
 
 // context
 struct Ctx {
@@ -178,23 +179,23 @@ struct SymbolTable<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct SectionTable<'a> {
-    sections: Vec<Section<'a>>
+struct SectionTable {
+    sections: Vec<Section>
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-struct Section<'a> {
+struct Section {
     name: String,
-    virtual_size: &'a [u8],
-    virtual_address: &'a [u8],
-    raw_data_size: &'a [u8],
-    ptr_to_raw_data: &'a [u8],
-    ptr_to_relocations: &'a [u8],
-    ptr_to_linenumbers: &'a [u8],
-    number_of_relocations: &'a [u8],
-    number_of_linenumbers: &'a [u8],
-    characteristics: &'a [u8]
+    virtual_size: u32,
+    virtual_address: u32,
+    raw_data_size: u32,
+    ptr_to_raw_data: usize,
+    ptr_to_relocations: usize,
+    ptr_to_linenumbers: usize,
+    number_of_relocations: u16,
+    number_of_linenumbers: u16,
+    characteristics: u32
 }
 
 #[allow(dead_code)]
@@ -496,6 +497,16 @@ struct ClassFile<'a> {
 /****************************************************************************************/
 
 
+fn le_to_u32(bytes: &[u8]) -> u32 {
+    let array: [u8; 4] = bytes[0..4].try_into().expect("wrong size length");
+    u32::from_le_bytes(array)
+} 
+
+fn le_to_u16(bytes: &[u8]) -> u16 {
+    let array: [u8; 2] = bytes[0..2].try_into().expect("wrong size length");
+    u16::from_le_bytes(array)
+}
+
 fn le_to_usize(bytes: &[u8]) -> usize {
     let mut array = [0u8; std::mem::size_of::<usize>()];
     for (i, &byte) in bytes.iter().enumerate() {
@@ -503,6 +514,7 @@ fn le_to_usize(bytes: &[u8]) -> usize {
     }
     usize::from_le_bytes(array)
 }
+
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
@@ -691,21 +703,24 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             for _i in 0..file_coff_header.section_count {
                 section_table.sections.push(Section {
                     name: String::from_utf8_lossy(&bytes[section_table_offset + for_offset_section_table .. section_table_offset + 8 + for_offset_section_table]).trim_end_matches('\0').to_string(),
-                    virtual_size:  &bytes[section_table_offset + 8 +  for_offset_section_table .. section_table_offset + 12 + for_offset_section_table],
-                    virtual_address: &bytes[section_table_offset + 12 +  for_offset_section_table .. section_table_offset + 16 + for_offset_section_table],
-                    raw_data_size: &bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table],
-                    ptr_to_raw_data: &bytes[section_table_offset + 20 +  for_offset_section_table .. section_table_offset + 24 + for_offset_section_table],
-                    ptr_to_relocations: &bytes[section_table_offset + 24 +  for_offset_section_table .. section_table_offset + 28 + for_offset_section_table],
-                    ptr_to_linenumbers: &bytes[section_table_offset + 28 +  for_offset_section_table .. section_table_offset + 32 + for_offset_section_table],
-                    number_of_relocations: &bytes[section_table_offset + 32 +  for_offset_section_table .. section_table_offset + 34 + for_offset_section_table],
-                    number_of_linenumbers: &bytes[section_table_offset + 34 +  for_offset_section_table .. section_table_offset + 36 + for_offset_section_table],
-                    characteristics: &bytes[section_table_offset + 36 +  for_offset_section_table .. section_table_offset + 40 + for_offset_section_table],
+                    virtual_size: le_to_u32(&bytes[section_table_offset + 8 +  for_offset_section_table .. section_table_offset + 12 + for_offset_section_table]),
+                    virtual_address: le_to_u32(&bytes[section_table_offset + 12 +  for_offset_section_table .. section_table_offset + 16 + for_offset_section_table]),
+                    raw_data_size: le_to_u32(&bytes[section_table_offset + 16 +  for_offset_section_table .. section_table_offset + 20 + for_offset_section_table]),
+                    ptr_to_raw_data: le_to_usize(&bytes[section_table_offset + 20 +  for_offset_section_table .. section_table_offset + 24 + for_offset_section_table]),
+                    ptr_to_relocations: le_to_usize(&bytes[section_table_offset + 24 +  for_offset_section_table .. section_table_offset + 28 + for_offset_section_table]),
+                    ptr_to_linenumbers: le_to_usize(&bytes[section_table_offset + 28 +  for_offset_section_table .. section_table_offset + 32 + for_offset_section_table]),
+                    number_of_relocations: le_to_u16(&bytes[section_table_offset + 32 +  for_offset_section_table .. section_table_offset + 34 + for_offset_section_table]),
+                    number_of_linenumbers: le_to_u16(&bytes[section_table_offset + 34 +  for_offset_section_table .. section_table_offset + 36 + for_offset_section_table]),
+                    characteristics: le_to_u32(&bytes[section_table_offset + 36 +  for_offset_section_table .. section_table_offset + 40 + for_offset_section_table]),
                 });
                 for_offset_section_table += 40;
             }         
 
             for section in section_table.sections.iter() {
                 println!("{}", section.name);
+                if section.name == ".rdata" {
+                    
+                }
             }
 
             let extracted_code = &bytes[entry_point_address..entry_point_address + code_size as usize];
