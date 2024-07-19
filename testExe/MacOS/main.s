@@ -4,8 +4,8 @@
 
 _main:                             // The program's entry point
     // Write "Hello, World!" to stdout
-    mov x0, #1                     // File descriptor 1 is stdout
-    ldr x1, =message               // Load address of the message
+    mov x0, #1             // 20 0 80 D2        // File descriptor 1 is stdout
+    ldr x1, =message       //        // Load address of the message
     mov x2, #13                    // Length of the message
     mov x16, #0x20                 // macOS syscall for write
     svc #0                         // Make the syscall
