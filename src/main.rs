@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::env;
 use std::fs;
 use std::convert::TryInto;
@@ -726,14 +727,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 });
                 for_offset_section_table += 40;
             }         
-            let mut extracted_code: &[u8] = &[];
-            for section in section_table.sections.iter() {
-                match section.name.as_str() {
-                    ".text" => extracted_code = section.raw_data,
-
-                    _ => println!("Unknown section"),
-                }
-            }
 
             let string_table_offset = symbol_table_pointer + (18 * symbol_count);
 
@@ -746,11 +739,28 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             string_table.strings = entire_string_table.split('\0').map(|s| s.to_string()).collect();
 
-            //todo: Extract String table and tradure the /xx sections name to extract them
+
+
+            let mut extracted_code: &[u8] = &[];
+            for section in section_table.sections.iter_mut() {
+                if section.name.starts_with("/") {
+                    let mut name: String = section.name.to_string();
+                    name = name.trim_start_matches("/").to_string();
+                    let index: usize = name.parse().unwrap();
+                    section.name = string_table.strings[index].clone();
+                }
+                match section.name.as_str() {
+                    ".text" => extracted_code = section.raw_data,
+                    //ToDo: Add common file sections name and extracts their data
+                    _ => println!("Unknown section"),
+                    //ToDo: Add extraction of unknow section name by pushing them into a vec containing name and raw data associated
+                }
+                println!("{}", section.name);
+            }
             // println!("Dos Header: {:x?}", file_dos_header);
             // println!("Dos Stub: {:x?}", file_dos_stub);
             // println!("Coff Header: {:x?}", file_coff_header);
-            //println!("Symbol Table: {:x?}", symbol_table);
+            // println!("Symbol Table: {:x?}", symbol_table);
             // println!("Optionnal Header: {:x?}", file_optional_header);
             // println!("Extracted Code: {:x?}", extracted_code);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
