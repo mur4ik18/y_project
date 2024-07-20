@@ -751,6 +751,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 }
                 match section.name.as_str() {
                     ".text" => extracted_code = section.raw_data,
+                    ".edata" => break,
+                    ".idata" => break,
+                    ".pdata" => break,
+                    ".rdata" => break,
+                    ".reloc" => break,
+                    ".rsrc"  => break,
+                    
                     //ToDo: Add common file sections name and extracts their data
                     _ => println!("Unknown section"),
                     //ToDo: Add extraction of unknow section name by pushing them into a vec containing name and raw data associated
