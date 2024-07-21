@@ -222,6 +222,40 @@ struct COFFString<'a> {
     string: String
 }
 
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RessourceDir<'a> {
+    characteristics: &'a[u8],
+    time_data_stamp: &'a[u8],
+    major_version: &'a[u8],
+    minor_version: &'a[u8],
+    name_entries_number: usize,
+    id_entries_number: usize
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RessourceDirEntries {
+    name_offset: usize,
+    data_entry_offset: usize,
+    subdirectory_offset: usize
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RessourceDirString<'a> {
+    length: usize,
+    unicode_string: &'a[u8]
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct RessourceDataEntry<'a> {
+    data_rva: &'a[u8],
+    size: usize,
+    codepage: &'a[u8],
+    reserved: &'a[u8]
+}
 /************************************************************************************/
 /******************************** ELF structure *************************************/
 /************************************************************************************/
@@ -741,7 +775,9 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
 
 
-            let mut extracted_code: &[u8] = &[];
+            let mut text_section_data: &[u8] = &[];
+            let mut rsrc_section_data: &[u8] = &[];
+
             for section in section_table.sections.iter_mut() {
                 if section.name.starts_with("/") {
                     let mut name: String = section.name.to_string();
@@ -750,14 +786,14 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                     section.name = string_table.strings[index].clone();
                 }
                 match section.name.as_str() {
-                    ".text" => extracted_code = section.raw_data,
+                    ".text" => text_section_data = section.raw_data,
                     ".edata" => break,
                     ".idata" => break,
                     ".pdata" => break,
                     ".rdata" => break,
                     ".reloc" => break,
-                    ".rsrc"  => break,
-                    
+                    ".rsrc"  => rsrc_section_data = section.raw_data,
+
                     //ToDo: Add common file sections name and extracts their data
                     _ => println!("Unknown section"),
                     //ToDo: Add extraction of unknow section name by pushing them into a vec containing name and raw data associated
@@ -769,7 +805,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             // println!("Coff Header: {:x?}", file_coff_header);
             // println!("Symbol Table: {:x?}", symbol_table);
             // println!("Optionnal Header: {:x?}", file_optional_header);
-            // println!("Extracted Code: {:x?}", extracted_code);
+            // println!("Extracted Code: {:x?}", text_section_data);
             // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
             // println!("Section Table: {:x?}", section_table);
             println!("String Table: {:?}", string_table);
