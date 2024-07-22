@@ -50,5 +50,14 @@ pub fn get_opcodes() -> HashMap {
         (0x3B, "CMP"),
         (0x3C, "CMP"),
         (0x3D, "CMP"),
+        (0x3F, "AAS"),
+        (0x40, "INC"),
+        (0x41, "INC"),
+        (0x42, "INC"),
+        (0x43, "INC"),
+        (0x44, "INC"),
+        (0x45, "INC"),
+        (0x46, "INC"),
+        (0x47, "INC"),
     ]);
 }

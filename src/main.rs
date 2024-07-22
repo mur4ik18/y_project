@@ -7,6 +7,10 @@ use crate::util::pe_structure::COFFHeader;
 use crate::util::pe_structure::DOSHeader;
 use crate::util::pe_structure::DataDirectoryEntry;
 use crate::util::pe_structure::OptionalHeader;
+use crate::util::pe_structure::PEFile;
+use crate::util::pe_structure::COFFStringTable;
+use crate::util::pe_structure::COFFString;
+use crate::util::pe_structure::RessourceDir;
 use crate::util::pe_structure::Section;
 use crate::util::pe_structure::SectionTable;
 use crate::util::pe_structure::StringTable;
@@ -169,39 +173,39 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             let entry_point_address = le_to_usize(&bytes[pe_offset + 36..pe_offset + 40]);
 
             let file_optional_header: OptionalHeader = OptionalHeader {
-                magic: &bytes[pe_offset + 24..pe_offset + 26],
-                major_linker_version: &bytes[pe_offset + 26..pe_offset + 27],
-                minor_linker_version: &bytes[pe_offset + 27..pe_offset + 28],
+                magic:                      &bytes[pe_offset + 24..pe_offset + 26],
+                major_linker_version:       &bytes[pe_offset + 26..pe_offset + 27],
+                minor_linker_version:       &bytes[pe_offset + 27..pe_offset + 28],
                 code_size: code_size,
-                initialized_data_size: &bytes[pe_offset + 32..pe_offset + 36],
-                uninitialized_data_size: &bytes[pe_offset + 36..pe_offset + 40],
+                initialized_data_size:      &bytes[pe_offset + 32..pe_offset + 36],
+                uninitialized_data_size:    &bytes[pe_offset + 36..pe_offset + 40],
                 entry_point_address: entry_point_address,
-                base_of_code: &bytes[pe_offset + 44..pe_offset + 48],
-                base_of_data: &bytes[pe_offset + 48..pe_offset + 52],
-                image_base: &bytes[pe_offset + 52..pe_offset + 56],
-                section_alignment: &bytes[pe_offset + 56..pe_offset + 60],
-                file_alignment: &bytes[pe_offset + 60..pe_offset + 64],
-                major_os_version: &bytes[pe_offset + 64..pe_offset + 66],
-                minor_os_version: &bytes[pe_offset + 66..pe_offset + 68],
-                major_image_version: &bytes[pe_offset + 68..pe_offset + 70],
-                minor_image_version: &bytes[pe_offset + 70..pe_offset + 72],
-                major_subsystem_version: &bytes[pe_offset + 72..pe_offset + 74],
-                minor_subsystem_version: &bytes[pe_offset + 74..pe_offset + 76],
-                win32_version_value: &bytes[pe_offset + 76..pe_offset + 80],
-                image_size: &bytes[pe_offset + 80..pe_offset + 84],
-                headers_size: &bytes[pe_offset + 84..pe_offset + 88],
-                checksum: &bytes[pe_offset + 88..pe_offset + 92],
-                subsystem: &bytes[pe_offset + 92..pe_offset + 94],
-                dll_characteristics: &bytes[pe_offset + 94..pe_offset + 96],
-                stack_reserve_size: &bytes[pe_offset + 96..pe_offset + 100],
-                stack_commit_size: &bytes[pe_offset + 100..pe_offset + 104],
-                heap_reserve_size: &bytes[pe_offset + 104..pe_offset + 108],
-                heap_commit_size: &bytes[pe_offset + 108..pe_offset + 112],
-                loader_flags: &bytes[pe_offset + 112..pe_offset + 116],
-                number_of_rva_and_sizes: &bytes[pe_offset + 116..pe_offset + 120],
+                base_of_code:               &bytes[pe_offset + 44..pe_offset + 48],
+                base_of_data:               &bytes[pe_offset + 48..pe_offset + 52],
+                image_base:                 &bytes[pe_offset + 52..pe_offset + 56],
+                section_alignment:          &bytes[pe_offset + 56..pe_offset + 60],
+                file_alignment:             &bytes[pe_offset + 60..pe_offset + 64],
+                major_os_version:           &bytes[pe_offset + 64..pe_offset + 66],
+                minor_os_version:           &bytes[pe_offset + 66..pe_offset + 68],
+                major_image_version:        &bytes[pe_offset + 68..pe_offset + 70],
+                minor_image_version:        &bytes[pe_offset + 70..pe_offset + 72],
+                major_subsystem_version:    &bytes[pe_offset + 72..pe_offset + 74],
+                minor_subsystem_version:    &bytes[pe_offset + 74..pe_offset + 76],
+                win32_version_value:        &bytes[pe_offset + 76..pe_offset + 80],
+                image_size:                 &bytes[pe_offset + 80..pe_offset + 84],
+                headers_size:               &bytes[pe_offset + 84..pe_offset + 88],
+                checksum:                   &bytes[pe_offset + 88..pe_offset + 92],
+                subsystem:                  &bytes[pe_offset + 92..pe_offset + 94],
+                dll_characteristics:        &bytes[pe_offset + 94..pe_offset + 96],
+                stack_reserve_size:         &bytes[pe_offset + 96..pe_offset + 100],
+                stack_commit_size:          &bytes[pe_offset + 100..pe_offset + 104],
+                heap_reserve_size:          &bytes[pe_offset + 104..pe_offset + 108],
+                heap_commit_size:           &bytes[pe_offset + 108..pe_offset + 112],
+                loader_flags:               &bytes[pe_offset + 112..pe_offset + 116],
+                number_of_rva_and_sizes: &  bytes[pe_offset + 116..pe_offset + 120],
                 data_directory: DataDirectoryEntry {
-                    virtual_address: &bytes[pe_offset + 120..pe_offset + 124],
-                    size: &bytes[pe_offset + 124..pe_offset + 128],
+                    virtual_address:        &bytes[pe_offset + 120..pe_offset + 124],
+                    size:                   &bytes[pe_offset + 124..pe_offset + 128],
                 },
             };
 
@@ -293,14 +297,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 });
                 for_offset_section_table += 40;
             }
-            let mut extracted_code: &[u8] = &[];
-            for section in section_table.sections.iter() {
-                match section.name.as_str() {
-                    ".text" => extracted_code = section.raw_data,
-
-                    _ => println!("Unknown section"),
-                }
-            }
+            
+            // extracting string table
 
             let string_table_offset = symbol_table_pointer + (18 * symbol_count);
 
@@ -313,45 +311,52 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 &bytes[string_table_offset + 4..string_table_offset + string_table.length],
             );
 
-            string_table.strings = entire_string_table
-                .split('\0')
-                .map(|s| s.to_string())
-                .collect();
+            string_table.strings = entire_string_table.split('\0').map(|s| s.to_string()).collect();
 
             let mut text_section_data: &[u8] = &[];
-            let mut rsrc_section_data: &[u8] = &[];
 
             for section in section_table.sections.iter_mut() {
+                println!("{}", section.name);
                 if section.name.starts_with("/") {
                     let mut name: String = section.name.to_string();
                     name = name.trim_start_matches("/").to_string();
                     let index: usize = name.parse().unwrap();
                     section.name = string_table.strings[index].clone();
                 }
+
                 match section.name.as_str() {
-                    ".text" => text_section_data = section.raw_data,
-                    ".edata" => break,
-                    ".idata" => break,
-                    ".pdata" => break,
-                    ".rdata" => break,
-                    ".reloc" => break,
-                    ".rsrc" => rsrc_section_data = section.raw_data,
+                    ".text" => {
+                        let mut text_section_data: &[u8] = &[];
+                        text_section_data = section.raw_data;
+                    },
+                    ".rsrc" => {
+                        let mut rsrc_section_data: &[u8] = &[];
+                        rsrc_section_data = section.raw_data;
+                        let rsrc_dir = RessourceDir {
+                            characteristics: &rsrc_section_data[0..4],
+                            time_data_stamp: &rsrc_section_data[4..8],
+                            major_version: &rsrc_section_data[8..10],
+                            minor_version: &rsrc_section_data[10..12],
+                            name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
+                            id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
+                        };
+                    },
 
                     //ToDo: Add common file sections name and extracts their data
-                    _ => println!("Unknown section"),
+                    _ => println!("Unknown section {}", section.name),
                     //ToDo: Add extraction of unknow section name by pushing them into a vec containing name and raw data associated
                 }
-                println!("{}", section.name);
             }
-            // println!("Dos Header: {:x?}", file_dos_header);
-            // println!("Dos Stub: {:x?}", file_dos_stub);
-            // println!("Coff Header: {:x?}", file_coff_header);
-            // println!("Symbol Table: {:x?}", symbol_table);
-            // println!("Optionnal Header: {:x?}", file_optional_header);
-            // println!("Extracted Code: {:x?}", text_section_data);
-            // println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-            // println!("Section Table: {:x?}", section_table);
-            println!("String Table: {:?}", string_table);
+            
+            //  println!("Dos Header: {:x?}", file_dos_header);
+            //  println!("Dos Stub: {:x?}", file_dos_stub);
+            //  println!("Coff Header: {:x?}", file_coff_header);
+            //  println!("Symbol Table: {:x?}", symbol_table);
+            //  println!("Optionnal Header: {:x?}", file_optional_header);
+            //  println!("Extracted Code: {:x?}", text_section_data);
+            //  println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
+            //  println!("Section Table: {:?}", section_table);
+            //  println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
@@ -442,9 +447,9 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 // ===========================================================================
 
 fn main() {
-    // help();
-    // let context: Ctx = get_arguments();
-    // let bytecode = read_file(&context.filename);
-    // let sign = get_sign(&bytecode);
-    // get_file_data(&sign, &bytecode);
+    //help();
+    let context: Ctx = get_arguments();
+    let bytecode = read_file(&context.filename);
+    let sign = get_sign(&bytecode);
+    get_file_data(&sign, &bytecode);
 }
