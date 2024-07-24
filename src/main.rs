@@ -58,6 +58,7 @@ fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
 }
 
 fn read_file(file_path: &String) -> Vec<u8> {
+    println!("*[+] Reading file...");
     let bytes = fs::read(file_path.to_owned()).unwrap();
     // for byte in bytes.iter() {
     //     print!("{:X} ", byte);
@@ -98,6 +99,7 @@ fn get_arguments() -> Ctx {
 }
 
 fn get_sign(bytes: &[u8]) -> String {
+    println!("*[+] Obtaining file signature...");
     let mut buffer = [0; 1024];
 
     let mut file_signature: String = String::from("unknown");
@@ -119,11 +121,12 @@ fn get_sign(bytes: &[u8]) -> String {
 
         symbol_table_for_offset += bytes_copy;
     }
-    println!("signature trouvee: {}", file_signature);
+    println!("*[+] File signature detected: {}", file_signature);
     file_signature
 }
 
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
+    println!("*[+] Obtaining file infos...");
     match file_signature {
         "DOS MZ executable" => {
             let pe_offset = le_to_usize(&bytes[60..64]);
@@ -316,7 +319,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             let mut text_section_data: &[u8] = &[];
 
             for section in section_table.sections.iter_mut() {
-                println!("{}", section.name);
                 if section.name.starts_with("/") {
                     let mut name: String = section.name.to_string();
                     name = name.trim_start_matches("/").to_string();
@@ -340,6 +342,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                             name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
                             id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
                         };
+                        // println!("Rsrc Data: {:?}", rsrc_section_data);
+                        // println!("Rsrc Dir: {:?}", rsrc_dir);
                     },
 
                     //ToDo: Add common file sections name and extracts their data
@@ -348,15 +352,15 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 }
             }
             
-            //  println!("Dos Header: {:x?}", file_dos_header);
-            //  println!("Dos Stub: {:x?}", file_dos_stub);
-            //  println!("Coff Header: {:x?}", file_coff_header);
-            //  println!("Symbol Table: {:x?}", symbol_table);
-            //  println!("Optionnal Header: {:x?}", file_optional_header);
-            //  println!("Extracted Code: {:x?}", text_section_data);
-            //  println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-              println!("Section Table: {:?}", section_table);
-            //  println!("String Table: {:?}", string_table);
+            //   println!("Dos Header: {:x?}", file_dos_header);
+            //   println!("Dos Stub: {:x?}", file_dos_stub);
+            //   println!("Coff Header: {:x?}", file_coff_header);
+            //   println!("Symbol Table: {:x?}", symbol_table);
+            //   println!("Optionnal Header: {:x?}", file_optional_header);
+            //   println!("Extracted Code: {:x?}", text_section_data);
+            //   println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
+            //   println!("Section Table: {:?}", section_table);
+            //   println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
