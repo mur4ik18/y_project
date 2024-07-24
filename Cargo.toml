@@ -6,4 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-xilem = "0.1.0"
+relm4 = "0.9"
+relm4-components = "0.9"
