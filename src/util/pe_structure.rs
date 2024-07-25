@@ -183,7 +183,6 @@ pub struct RessourceDir<'a> {
 pub struct RessourceDirEntries {
     pub name_offset: usize,
     pub data_entry_offset: usize,
-    pub subdirectory_offset: usize,
 }
 
 #[allow(dead_code)]
