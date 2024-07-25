@@ -93,7 +93,7 @@ fn get_arguments() -> Ctx {
         if args[i] == "-b" {
             ctx.byte = true;
         }
-        println!("arg {} - {}", i, args[i]);
+        // println!("arg {} - {}", i, args[i]);
     }
     ctx
 }
@@ -347,6 +347,20 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                         };
                         // println!("Rsrc Data: {:?}", rsrc_section_data);
                         // println!("Rsrc Dir: {:?}", rsrc_dir);
+
+                        // fonction récursive qui lis un directory, on lui donne un offset.
+
+                        // elle lis le nombre d'entrée de nom,
+                        // si c'est un subdirectory alors elle se rappelle elle même
+                        // sinon elle stocke les données de la name entry
+
+                        // elle lis le nombre d'entrée d'id
+                        // si c'est un subdirectory alors elle se rappelle elle même
+                        // sinon elle stocke les données de l'id entry
+
+                        // si bit poids fort == 1 alors entrée de donnée sinon subdir
+                        // les 31 autres bits sont l'offset des données
+
                     },
 
                     //ToDo: Add common file sections name and extracts their data
