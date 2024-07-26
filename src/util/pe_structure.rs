@@ -19,7 +19,7 @@ pub struct DOSHeader<'a> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct COFFHeader<'a> {
     pub magic: &'a [u8],
     pub machine: &'a [u8],
