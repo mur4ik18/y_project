@@ -358,7 +358,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             //  println!("Optionnal Header: {:x?}", file_optional_header);
             //  println!("Extracted Code: {:x?}", text_section_data);
             //  println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-              println!("Section Table: {:?}", section_table);
+            println!("Section Table: {:?}", section_table);
             //  println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
