@@ -42,7 +42,23 @@
 </div>
 
 
-links:
+## Using guide
+
+Start Gui
+```
+cargo run -p gui
+```
+
+Start CLI
+```
+cargo run -p y_project -- -f filename.*
+```
+
+
+
+## Links for our team: 
+
+```
 http://ref.x86asm.net/#Instruction-Operand-Codes
 https://github.com/CAS-Atlantic/AArch64-Encoding/blob/master/AArch64_ops.csv
 https://modexp.wordpress.com/2018/10/30/arm64-assembly/
@@ -51,3 +67,4 @@ https://lief.re/doc/latest/tutorials/11_macho_modification.html
 https://en.wikipedia.org/wiki/List_of_file_signatures
 https://doc.rust-lang.org/book/
 https://en.wikipedia.org/wiki/Portable_Executable#/media/File:Portable_Executable_32_bit_Structure_in_SVG_fixed.svg
+```
