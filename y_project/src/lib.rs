@@ -1,120 +1,34 @@
-use gtk::prelude::*;
-use relm4::prelude::*;
 use std::convert::TryInto;
 use std::env;
 use std::fs;
-pub mod util;
 
-use crate::util::pe_structure::COFFHeader;
-use crate::util::pe_structure::COFFString;
-use crate::util::pe_structure::COFFStringTable;
-use crate::util::pe_structure::DOSHeader;
-use crate::util::pe_structure::DataDirectoryEntry;
-use crate::util::pe_structure::OptionalHeader;
-use crate::util::pe_structure::PEFile;
-use crate::util::pe_structure::RessourceDir;
-use crate::util::pe_structure::Section;
-use crate::util::pe_structure::SectionTable;
-use crate::util::pe_structure::StringTable;
-use crate::util::pe_structure::Symbol;
-use crate::util::pe_structure::SymbolTable;
+pub mod elf_structure;
+pub mod jvm_structure;
+pub mod macho_structure;
+pub mod pe_structure;
+pub mod signature;
 
-use crate::util::signature::SIGNATURES;
+use crate::pe_structure::COFFHeader;
+use crate::pe_structure::COFFString;
+use crate::pe_structure::COFFStringTable;
+use crate::pe_structure::DOSHeader;
+use crate::pe_structure::DataDirectoryEntry;
+use crate::pe_structure::OptionalHeader;
+use crate::pe_structure::PEFile;
+use crate::pe_structure::RessourceDir;
+use crate::pe_structure::Section;
+use crate::pe_structure::SectionTable;
+use crate::pe_structure::StringTable;
+use crate::pe_structure::Symbol;
+use crate::pe_structure::SymbolTable;
 
-use crate::util::elf_structure::ELFHeader;
-use crate::util::elf_structure::ELFIdentification;
-use crate::util::elf_structure::FileInfoELF;
+use crate::signature::SIGNATURES;
 
-use crate::util::macho_structure::MachOHeader;
+use crate::elf_structure::ELFHeader;
+use crate::elf_structure::ELFIdentification;
+use crate::elf_structure::FileInfoELF;
 
-struct App {}
-
-#[derive(Debug)]
-enum Msg {
-    OpenFile,
-}
-
-#[relm4::component]
-impl SimpleComponent for App {
-    type Init = u8;
-    type Input = Msg;
-    type Output = ();
-
-    view! {
-        main_window = gtk::ApplicationWindow {
-            set_title: Some("App"),
-            set_default_size: (600, 200),
-
-            gtk::Box {
-                set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 5,
-                set_margin_all: 5,
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 5,
-                    gtk::Button {
-                        set_label: "Choose file",
-                        connect_clicked => Msg::OpenFile,
-                    }
-                },
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_spacing: 5,
-
-                }
-
-            }
-        }
-    }
-
-    // Initialize the component.
-    fn init(
-        counter: Self::Init,
-        root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let model = App {};
-
-        // Insert the code generation of the view! macro here
-        let widgets = view_output!();
-
-        ComponentParts { model, widgets }
-    }
-
-    fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
-        match msg {
-            Msg::OpenFile => {
-                println!("Open File");
-                let input_path_chooser = gtk::FileChooserDialog::builder()
-                    .title("Select file")
-                    .action(gtk::FileChooserAction::Open)
-                    .modal(true)
-                    //.select_multiple(true)
-                    .build();
-
-                input_path_chooser.add_button("Select", gtk::ResponseType::Accept);
-                input_path_chooser.add_button("Cancel", gtk::ResponseType::Cancel);
-                input_path_chooser.run_async(move |dialog, result| {
-                    match result {
-                        gtk::ResponseType::Accept => {
-                            if let Some(file) = dialog.file() {
-                                if let Some(path) = file.path() {
-                                    println!("Selected file: {:?}", path);
-                                } else {
-                                    println!("No valid path found for the selected file.");
-                                }
-                            } else {
-                                println!("No file selected.");
-                            }
-                        }
-                        _ => println!("File selection cancelled."),
-                    }
-                    dialog.destroy();
-                })
-            }
-        }
-    }
-}
+use crate::macho_structure::MachOHeader;
 
 // context
 struct Ctx {
@@ -157,7 +71,7 @@ fn read_file(file_path: &String) -> Vec<u8> {
     bytes
 }
 
-fn help() {
+pub fn help() {
     println!(
         "Usage:
 -f <filename> - read file
@@ -534,18 +448,4 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
         }
         _ => {}
     }
-}
-
-// ===========================================================================
-//                                    Graphisme
-// ===========================================================================
-
-fn main() {
-    let app = RelmApp::new("relm4.example.simple");
-    app.run::<App>(0);
-    //help();
-    //let context: Ctx = get_arguments();
-    //let bytecode = read_file(&context.filename);
-    //let sign = get_sign(&bytecode);
-    //get_file_data(&sign, &bytecode);
 }
