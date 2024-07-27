@@ -171,7 +171,7 @@ pub struct COFFString<'a> {
 #[derive(Debug)]
 pub struct RessourceDir<'a> {
     pub characteristics: &'a [u8],
-    pub time_data_stamp: &'a [u8],
+    pub time_date_stamp: &'a [u8],
     pub major_version: &'a [u8],
     pub minor_version: &'a [u8],
     pub name_entries_number: usize,
