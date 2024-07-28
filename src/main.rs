@@ -337,6 +337,17 @@ fn get_sign(bytes: &[u8]) -> String {
     file_signature
 }
 
+fn replace_section_names(string_table: &StringTable, section_table: &mut SectionTable) {
+    for section in section_table.sections.iter_mut() {
+        if section.name.starts_with("/") {
+            let mut name: String = section.name.to_string();
+            name = name.trim_start_matches("/").to_string();
+            let index: usize = name.parse().unwrap();
+            section.name = string_table.strings[index].clone();
+        }          
+    }
+}
+
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
     println!("*[+] Obtaining file infos...");
     match file_signature {
@@ -353,19 +364,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             
             let string_table = extract_string_table(bytes, coff_header.clone());
 
-            let section_table = extract_section_table(bytes, dos_header.pe_offset, coff_header.clone());
+            let mut section_table = extract_section_table(bytes, dos_header.pe_offset, coff_header.clone());
             
-
+            replace_section_names(&string_table, &mut section_table);
             // let mut text_section_data: &[u8] = &[];
-
             // for section in section_table.sections.iter_mut() {
-            //     if section.name.starts_with("/") {
-            //         let mut name: String = section.name.to_string();
-            //         name = name.trim_start_matches("/").to_string();
-            //         let index: usize = name.parse().unwrap();
-            //         section.name = string_table.strings[index].clone();
-            //     }
-
             //     match section.name.as_str() {
             //         ".text" => {
             //             let mut text_section_data: &[u8] = &[];
@@ -406,15 +409,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             //     }
             // }
             
-            //   println!("Dos Header: {:x?}", file_dos_header);
-            //   println!("Dos Stub: {:x?}", file_dos_stub);
-            //   println!("Coff Header: {:x?}", file_coff_header);
-            //   println!("Symbol Table: {:x?}", symbol_table);
-            //   println!("Optionnal Header: {:x?}", file_optional_header);
-            //   println!("Extracted Code: {:x?}", text_section_data);
-            //   println!("Section Table symbol_table_for_offset: {:?}", section_table_offset);
-            //   println!("Section Table: {:?}", section_table);
-            //   println!("String Table: {:?}", string_table);
+            println!("Dos Header: {:x?}", dos_header);
+            println!("Dos Stub: {:x?}", dos_stub);
+            println!("Coff Header: {:x?}", coff_header);
+            println!("Symbol Table: {:x?}", symbol_table);
+            println!("Optionnal Header: {:x?}", opt_header);
+            println!("Section Table: {:?}", section_table);
+            println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
