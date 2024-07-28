@@ -7,11 +7,13 @@ use relm4_components::open_button::{OpenButton, OpenButtonSettings};
 use relm4_components::open_dialog::OpenDialogSettings;
 use std::path::PathBuf;
 struct App {
+    // button what we use for file opening
     open_button: Controller<OpenButton>,
 }
 
 #[derive(Debug)]
 enum Msg {
+    // Message for file opening
     Open(PathBuf),
 }
 
@@ -25,10 +27,13 @@ impl SimpleComponent for App {
         main_window = gtk::ApplicationWindow {
             set_title: Some("App"),
             set_default_size: (600, 200),
+            // title bar (Bar where we can find name of app and etc.)
             #[wrap(Some)]
             set_titlebar = &gtk::HeaderBar {
               pack_start: model.open_button.widget(),
             },
+
+            //
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 5,
@@ -48,6 +53,7 @@ impl SimpleComponent for App {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        // Window builder for file opening
         let open_button = OpenButton::builder()
             .launch(OpenButtonSettings {
                 dialog_settings: OpenDialogSettings::default(),
@@ -55,6 +61,7 @@ impl SimpleComponent for App {
                 recently_opened_files: Some(".recent_files"),
                 max_recent_files: 10,
             })
+            // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
         let model = App { open_button };
         let widgets = view_output!();
