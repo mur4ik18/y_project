@@ -62,7 +62,7 @@ fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
 }
 
-fn read_file(file_path: &String) -> Vec<u8> {
+pub fn read_file(file_path: &String) -> Vec<u8> {
     println!("*[+] Reading file...");
     let bytes = fs::read(file_path.to_owned()).unwrap();
     // for byte in bytes.iter() {
@@ -103,7 +103,7 @@ fn get_arguments() -> Ctx {
     ctx
 }
 
-fn get_sign(bytes: &[u8]) -> String {
+pub fn get_sign(bytes: &[u8]) -> String {
     println!("*[+] Obtaining file signature...");
     let mut buffer = [0; 1024];
 
@@ -130,7 +130,7 @@ fn get_sign(bytes: &[u8]) -> String {
     file_signature
 }
 
-fn get_file_data(file_signature: &str, bytes: &[u8]) {
+pub fn get_file_data(file_signature: &str, bytes: &[u8]) {
     println!("*[+] Obtaining file infos...");
     match file_signature {
         "DOS MZ executable" => {
