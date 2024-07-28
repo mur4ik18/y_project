@@ -1,15 +1,23 @@
 use gtk::prelude::*;
-use relm4::prelude::*;
-struct App {}
+use relm4::{
+    gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller, RelmApp,
+    SimpleComponent,
+};
+use relm4_components::open_button::{OpenButton, OpenButtonSettings};
+use relm4_components::open_dialog::OpenDialogSettings;
+use std::path::PathBuf;
+struct App {
+    open_button: Controller<OpenButton>,
+}
 
 #[derive(Debug)]
 enum Msg {
-    OpenFile,
+    Open(PathBuf),
 }
 
 #[relm4::component]
 impl SimpleComponent for App {
-    type Init = u8;
+    type Init = ();
     type Input = Msg;
     type Output = ();
 
@@ -17,19 +25,13 @@ impl SimpleComponent for App {
         main_window = gtk::ApplicationWindow {
             set_title: Some("App"),
             set_default_size: (600, 200),
-
+            #[wrap(Some)]
+            set_titlebar = &gtk::HeaderBar {
+              pack_start: model.open_button.widget(),
+            },
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 5,
-                set_margin_all: 5,
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_spacing: 5,
-                    gtk::Button {
-                        set_label: "Choose file",
-                        connect_clicked => Msg::OpenFile,
-                    }
-                },
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
@@ -46,44 +48,24 @@ impl SimpleComponent for App {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = App {};
-
-        // Insert the code generation of the view! macro here
+        let open_button = OpenButton::builder()
+            .launch(OpenButtonSettings {
+                dialog_settings: OpenDialogSettings::default(),
+                text: "Open file",
+                recently_opened_files: Some(".recent_files"),
+                max_recent_files: 10,
+            })
+            .forward(sender.input_sender(), Msg::Open);
+        let model = App { open_button };
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, msg: Self::Input, _: ComponentSender<Self>) {
         match msg {
-            Msg::OpenFile => {
-                println!("Open File");
-                let input_path_chooser = gtk::FileChooserDialog::builder()
-                    .title("Select file")
-                    .action(gtk::FileChooserAction::Open)
-                    .modal(true)
-                    //.select_multiple(true)
-                    .build();
-
-                input_path_chooser.add_button("Select", gtk::ResponseType::Accept);
-                input_path_chooser.add_button("Cancel", gtk::ResponseType::Cancel);
-                input_path_chooser.run_async(move |dialog, result| {
-                    match result {
-                        gtk::ResponseType::Accept => {
-                            if let Some(file) = dialog.file() {
-                                if let Some(path) = file.path() {
-                                    println!("Selected file: {:?}", path);
-                                } else {
-                                    println!("No valid path found for the selected file.");
-                                }
-                            } else {
-                                println!("No file selected.");
-                            }
-                        }
-                        _ => println!("File selection cancelled."),
-                    }
-                    dialog.destroy();
-                })
+            Msg::Open(path) => {
+                println!("* Opened file {path:?} *");
             }
         }
     }
@@ -91,5 +73,5 @@ impl SimpleComponent for App {
 
 fn main() {
     let app = RelmApp::new("relm4.example.simple");
-    app.run::<App>(0);
+    app.run::<App>(());
 }
