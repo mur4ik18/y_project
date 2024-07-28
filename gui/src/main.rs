@@ -96,7 +96,7 @@ impl SimpleComponent for App {
         match msg {
             Msg::Open(path) => {
                 println!("* Opened file {path:?} *");
-                self.bindata = y_project::read_file(path);
+                self.bindata = y_project::read_file(&path.into_os_string().into_string().unwrap());
             }
         }
     }
