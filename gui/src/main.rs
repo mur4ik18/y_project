@@ -13,7 +13,11 @@ struct Panel1 {}
 struct App {
     // button what we use for file opening
     open_button: Controller<OpenButton>,
+
+    // binary
     bindata: Vec<u8>,
+    //bin_view: Component<gtk::TextView>,
+    bin_buffer: gtk::TextBuffer,
 }
 
 #[derive(Debug)]
@@ -43,23 +47,32 @@ impl SimpleComponent for App {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 5,
 
-                // collumn
+                // collumn 1
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
 
                 },
-                // collumn
+                // collumn 2
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
-
+                    gtk::Label::new(Some("Memory view")),
                     gtk::ScrolledWindow {
-                        set_hscrollbar_policy: gtk::PolicyType::Never,
                         set_min_content_height: 360,
                         set_vexpand: true,
-                        //#[local_ref]
-                        // info ->
+                        set_min_content_width: 400,
+
+                        #[wrap(Some)]
+                        set_child = &gtk::TextView {
+                            set_wrap_mode: gtk::WrapMode::Word,
+                            // set buffer
+                            set_buffer: Some(&model.bin_buffer),
+
+                            // Is visible when you open new file
+                            //#[watch]
+                            //set_visible: model.bindata.is_some(),
+                        }
                     },
                 }
             }
@@ -82,10 +95,14 @@ impl SimpleComponent for App {
             })
             // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
+        // I evoid to use Option<>, so I need to create empty Vec
         let bindata: Vec<u8> = Vec::<u8>::new();
+
+        // Add all Fields in Application
         let model = App {
-            open_button,
-            bindata,
+            open_button: open_button,
+            bindata: bindata,
+            bin_buffer: gtk::TextBuffer::new(None),
         };
         let widgets = view_output!();
 
@@ -96,7 +113,17 @@ impl SimpleComponent for App {
         match msg {
             Msg::Open(path) => {
                 println!("* Opened file {path:?} *");
+                // save file binaru to structure
                 self.bindata = y_project::read_file(&path.into_os_string().into_string().unwrap());
+
+                // Convert Vec to String
+                let s: String = self
+                    .bindata
+                    .iter()
+                    .map(|byte| format!("{:02x} ", byte))
+                    .collect();
+                // Convert String to str for buffer
+                self.bin_buffer.set_text(s.as_str());
             }
         }
     }
