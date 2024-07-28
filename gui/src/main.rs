@@ -6,9 +6,14 @@ use relm4::{
 use relm4_components::open_button::{OpenButton, OpenButtonSettings};
 use relm4_components::open_dialog::OpenDialogSettings;
 use std::path::PathBuf;
+use y_project;
+
+struct Panel1 {}
+
 struct App {
     // button what we use for file opening
     open_button: Controller<OpenButton>,
+    bindata: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -26,23 +31,37 @@ impl SimpleComponent for App {
     view! {
         main_window = gtk::ApplicationWindow {
             set_title: Some("App"),
-            set_default_size: (600, 200),
+            set_default_size: (600, 600),
             // title bar (Bar where we can find name of app and etc.)
             #[wrap(Some)]
             set_titlebar = &gtk::HeaderBar {
               pack_start: model.open_button.widget(),
             },
 
-            //
+            // row
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 5,
+
+                // collumn
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
 
-                }
+                },
+                // collumn
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_spacing: 5,
 
+                    gtk::ScrolledWindow {
+                        set_hscrollbar_policy: gtk::PolicyType::Never,
+                        set_min_content_height: 360,
+                        set_vexpand: true,
+                        //#[local_ref]
+                        // info ->
+                    },
+                }
             }
         }
     }
@@ -63,7 +82,11 @@ impl SimpleComponent for App {
             })
             // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
-        let model = App { open_button };
+        let bindata: Vec<u8> = Vec::<u8>::new();
+        let model = App {
+            open_button,
+            bindata,
+        };
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
@@ -73,6 +96,7 @@ impl SimpleComponent for App {
         match msg {
             Msg::Open(path) => {
                 println!("* Opened file {path:?} *");
+                self.bindata = y_project::read_file(path);
             }
         }
     }

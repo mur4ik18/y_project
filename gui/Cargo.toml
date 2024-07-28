@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 relm4 = "0.9"
 relm4-components = "0.9"
+y_project = {path = "../y_project"}
