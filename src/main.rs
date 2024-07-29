@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::env;
+use std::collections::HashMap;
 use std::fs;
 pub mod util;
 
@@ -338,6 +339,7 @@ fn get_sign(bytes: &[u8]) -> String {
 }
 
 fn replace_section_names(string_table: &StringTable, section_table: &mut SectionTable) {
+    println!("*[+] Replacing section names...");
     for section in section_table.sections.iter_mut() {
         if section.name.starts_with("/") {
             let mut name: String = section.name.to_string();
@@ -345,6 +347,62 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
             let index: usize = name.parse().unwrap();
             section.name = string_table.strings[index].clone();
         }          
+    }
+}
+
+enum SectionData<'a> {
+    Text(TextData<'a>),
+    Rsrc(RsrcData<'a>),
+}
+
+#[derive(Debug)]
+struct TextData<'a> {
+    extracted_code: &'a [u8],
+}
+
+#[derive(Debug)]
+struct RsrcData<'a> {
+    characteristics: &'a [u8],
+    time_date_stamp: &'a [u8],
+    major_version: &'a [u8],
+    minor_version: &'a [u8],
+    name_entries_number: usize,
+    id_entries_number: usize,
+}
+
+struct SectionsData<'a> {
+    sections: HashMap<String, SectionData<'a>>,
+}
+
+fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data: &mut SectionsData<'a>) {
+    for section in section_table.sections.iter_mut() {
+        match section.name.as_str() {
+            ".text" => {
+                sections_data.sections.insert(
+                    section.name.clone(),
+                    SectionData::Text(TextData {
+                        extracted_code: section.raw_data,
+                    }),
+                );
+            }
+            ".rsrc" => {
+                let rsrc_section_data = section.raw_data;
+                sections_data.sections.insert(
+                    section.name.clone(),
+                    SectionData::Rsrc(RsrcData {
+                        characteristics: &rsrc_section_data[0..4],
+                        time_date_stamp: &rsrc_section_data[4..8],
+                        major_version: &rsrc_section_data[8..10],
+                        minor_version: &rsrc_section_data[10..12],
+                        name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
+                        id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
+                    }),
+                );
+            }
+            _ => {
+                // println!("*[-] Unknown section -> {}", section.name);
+            }
+        }
     }
 }
 
@@ -366,56 +424,45 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let mut section_table = extract_section_table(bytes, dos_header.pe_offset, coff_header.clone());
             
+            let mut sections_data = SectionsData {
+                sections: HashMap::new(),
+            };
+
             replace_section_names(&string_table, &mut section_table);
-            // let mut text_section_data: &[u8] = &[];
-            // for section in section_table.sections.iter_mut() {
-            //     match section.name.as_str() {
-            //         ".text" => {
-            //             let mut text_section_data: &[u8] = &[];
-            //             text_section_data = section.raw_data;
-            //         }
-            //         ".rsrc" => {
-            //             let mut rsrc_section_data: &[u8] = &[];
-            //             rsrc_section_data = section.raw_data;
-            //             let rsrc_dir = RessourceDir {
-            //                 characteristics: &rsrc_section_data[0..4],
-            //                 time_data_stamp: &rsrc_section_data[4..8],
-            //                 major_version: &rsrc_section_data[8..10],
-            //                 minor_version: &rsrc_section_data[10..12],
-            //                 name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
-            //                 id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
-            //             };
-            //             // println!("Rsrc Data: {:?}", rsrc_section_data);
-            //             // println!("Rsrc Dir: {:?}", rsrc_dir);
+
+            extract_section_datas(&mut section_table, &mut sections_data);
+
+            if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
+                // println!("Extracted .text section data: {:?}", text_data.extracted_code);
+            } 
+        
+            if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
+                // println!("Extracted .rsrc section data: {:?}", rsrc_data);
+            } 
+
+                        // println!("Rsrc Data: {:?}", rsrc_section_data);
+                        // println!("Rsrc Dir: {:?}", rsrc_dir);
                         
-            //             // fonction récursive qui lis un directory, on lui donne un offset.
+                        // fonction récursive qui lis un directory, on lui donne un offset.
 
-            //             // elle lis le nombre d'entrée de nom,
-            //             // si c'est un subdirectory alors elle se rappelle elle même
-            //             // sinon elle stocke les données de la name entry
+                        // elle lis le nombre d'entrée de nom,
+                        // si c'est un subdirectory alors elle se rappelle elle même
+                        // sinon elle stocke les données de la name entry
 
-            //             // elle lis le nombre d'entrée d'id
-            //             // si c'est un subdirectory alors elle se rappelle elle même
-            //             // sinon elle stocke les données de l'id entry
+                        // elle lis le nombre d'entrée d'id
+                        // si c'est un subdirectory alors elle se rappelle elle même
+                        // sinon elle stocke les données de l'id entry
 
-            //             // si bit poids fort == 1 alors entrée de donnée sinon subdir
-            //             // les 31 autres bits sont l'offset des données
-
-            //         },
-
-            //         //ToDo: Add common file sections name and extracts their data
-            //         _ => println!("Unknown section {}", section.name),
-            //         //ToDo: Add extraction of unknow section name by pushing them into a vec containing name and raw data associated
-            //     }
-            // }
+                        // si bit poids fort == 1 alors entrée de donnée sinon subdir
+                        // les 31 autres bits sont l'offset des données
             
-            println!("Dos Header: {:x?}", dos_header);
-            println!("Dos Stub: {:x?}", dos_stub);
-            println!("Coff Header: {:x?}", coff_header);
-            println!("Symbol Table: {:x?}", symbol_table);
-            println!("Optionnal Header: {:x?}", opt_header);
-            println!("Section Table: {:?}", section_table);
-            println!("String Table: {:?}", string_table);
+            // println!("Dos Header: {:x?}", dos_header);
+            // println!("Dos Stub: {:x?}", dos_stub);
+            // println!("Coff Header: {:x?}", coff_header);
+            // println!("Symbol Table: {:x?}", symbol_table);
+            // println!("Optionnal Header: {:x?}", opt_header);
+            // println!("Section Table: {:?}", section_table);
+            // println!("String Table: {:?}", string_table);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
