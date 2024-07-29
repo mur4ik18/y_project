@@ -36,8 +36,11 @@ disassembly component (Read more in disassembly component section).
 
 **** Example
 
-000000 0X F2 23 12 F2 A2 23 F3 E1 12 F2 A2 23 F3 E1 000010 0X F2 23 12
-F2 A2 23 F3 E1 12 F2 A2 23 F3 E1 000020 ...
+000000 0X F2 23 12 F2 A2 23 F3 E1 12 F2 A2 23 F3 E1
+
+000010 0X F2 23 12 F2 A2 23 F3 E1 12 F2 A2 23 F3 E1  
+
+000020 ...
 
 *** Disassembly 
 The next and last component is a disassembly part.
