@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::fs;
 pub mod util;
 
+//use relm4::gtk::glib::current_dir;
+
 use crate::util::pe_structure::COFFHeader;
 use crate::util::pe_structure::COFFString;
 use crate::util::pe_structure::COFFStringTable;
@@ -352,7 +354,7 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
 
 enum SectionData<'a> {
     Text(TextData<'a>),
-    Rsrc(RsrcData<'a>),
+    Rsrc(RessourceDir<'a>),
 }
 
 #[derive(Debug)]
@@ -360,21 +362,12 @@ struct TextData<'a> {
     extracted_code: &'a [u8],
 }
 
-#[derive(Debug)]
-struct RsrcData<'a> {
-    characteristics: &'a [u8],
-    time_date_stamp: &'a [u8],
-    major_version: &'a [u8],
-    minor_version: &'a [u8],
-    name_entries_number: usize,
-    id_entries_number: usize,
-}
-
 struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
 }
 
 fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data: &mut SectionsData<'a>) {
+    println!("*[+] Extracting data from sections...");
     for section in section_table.sections.iter_mut() {
         match section.name.as_str() {
             ".text" => {
@@ -389,7 +382,7 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                 let rsrc_section_data = section.raw_data;
                 sections_data.sections.insert(
                     section.name.clone(),
-                    SectionData::Rsrc(RsrcData {
+                    SectionData::Rsrc(RessourceDir {
                         characteristics: &rsrc_section_data[0..4],
                         time_date_stamp: &rsrc_section_data[4..8],
                         major_version: &rsrc_section_data[8..10],
@@ -398,12 +391,62 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                         id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
                     }),
                 );
+                let main_directory = RessourceDir {
+                    characteristics: &rsrc_section_data[0..4],
+                    time_date_stamp: &rsrc_section_data[4..8],
+                    major_version: &rsrc_section_data[8..10],
+                    minor_version: &rsrc_section_data[10..12],
+                    name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
+                    id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
+                };
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
             }
         }
     }
+}
+
+fn is_a_subdirectory(value: &[u8]) -> bool {
+    if value[0] ^ 0b00000000 == 0b10000000 {
+        return true;
+    }
+    return false;
+}
+
+fn find_rsrc_data(mut offset: usize, bytes: &[u8]){
+    let current_dir = RessourceDir {
+        characteristics: &bytes[offset..offset+4],
+        time_date_stamp: &bytes[offset+4..offset+8],
+        major_version: &bytes[offset+8..offset+10],
+        minor_version: &bytes[offset+10..offset+12],
+        name_entries_number: le_to_usize(&bytes[offset+12..offset+14]),
+        id_entries_number: le_to_usize(&bytes[offset+14..offset+16]),
+    };
+    offset+=16;
+
+    let mut name_entry_offset: usize = 0;
+    for _ in 0..current_dir.name_entries_number{
+        let current_name_entry = DataDirectoryEntry {
+            virtual_address: &bytes[offset + name_entry_offset..offset + name_entry_offset + 4],
+            size: &bytes[offset + name_entry_offset +4 ..offset + name_entry_offset + 8]
+        };
+
+
+
+        name_entry_offset+=8;
+    }
+    offset+=current_dir.name_entries_number*8;
+
+    let mut id_entry_offset: usize = 0;
+    for _ in 0..current_dir.id_entries_number{
+        let current_id_entry = DataDirectoryEntry {
+            virtual_address: &bytes[offset + id_entry_offset..offset + id_entry_offset + 4],
+            size: &bytes[offset + id_entry_offset +4 ..offset + id_entry_offset + 8]
+        };
+        id_entry_offset+=8;
+    }
+
 }
 
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
@@ -433,16 +476,13 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(&mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-                // println!("Extracted .text section data: {:?}", text_data.extracted_code);
+                println!("Extracted .text section data: {:?}", text_data.extracted_code);
             } 
         
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
-                // println!("Extracted .rsrc section data: {:?}", rsrc_data);
+                println!("Extracted .rsrc section data: {:?}", rsrc_data);
             } 
 
-                        // println!("Rsrc Data: {:?}", rsrc_section_data);
-                        // println!("Rsrc Dir: {:?}", rsrc_dir);
-                        
                         // fonction récursive qui lis un directory, on lui donne un offset.
 
                         // elle lis le nombre d'entrée de nom,
