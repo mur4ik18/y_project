@@ -362,6 +362,10 @@ struct TextData<'a> {
     extracted_code: &'a [u8],
 }
 
+struct RsrcData<'a> {
+    extracted_data: &'a [u8],
+}
+
 struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
 }
@@ -391,14 +395,7 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                         id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
                     }),
                 );
-                let main_directory = RessourceDir {
-                    characteristics: &rsrc_section_data[0..4],
-                    time_date_stamp: &rsrc_section_data[4..8],
-                    major_version: &rsrc_section_data[8..10],
-                    minor_version: &rsrc_section_data[10..12],
-                    name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
-                    id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
-                };
+                find_rsrc_data(0, rsrc_section_data);
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
@@ -425,26 +422,38 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]){
     };
     offset+=16;
 
-    let mut name_entry_offset: usize = 0;
     for _ in 0..current_dir.name_entries_number{
         let current_name_entry = DataDirectoryEntry {
-            virtual_address: &bytes[offset + name_entry_offset..offset + name_entry_offset + 4],
-            size: &bytes[offset + name_entry_offset +4 ..offset + name_entry_offset + 8]
+            virtual_address: &bytes[offset..offset + 4],
+            size: &bytes[offset + 4 ..offset + 8]
         };
 
+        if is_a_subdirectory(current_name_entry.size) {
+            let subdirectory_offset = le_to_usize(current_name_entry.virtual_address);
+            find_rsrc_data(subdirectory_offset, bytes);
+        } else {
+            println!("Data trouvée à l'adresse-> {:?}", current_name_entry.virtual_address);
+        }
 
-
-        name_entry_offset+=8;
+        offset+=8;
     }
+
     offset+=current_dir.name_entries_number*8;
 
-    let mut id_entry_offset: usize = 0;
     for _ in 0..current_dir.id_entries_number{
         let current_id_entry = DataDirectoryEntry {
-            virtual_address: &bytes[offset + id_entry_offset..offset + id_entry_offset + 4],
-            size: &bytes[offset + id_entry_offset +4 ..offset + id_entry_offset + 8]
+            virtual_address: &bytes[offset..offset + 4],
+            size: &bytes[offset +4 ..offset + 8]
         };
-        id_entry_offset+=8;
+        
+        if is_a_subdirectory(current_id_entry.size) {
+            let subdirectory_offset = le_to_usize(current_id_entry.virtual_address);
+            find_rsrc_data(subdirectory_offset, bytes);
+        } else {
+            println!("Data trouvée à l'adresse-> {:?}", current_id_entry.virtual_address);
+        }
+
+        offset+=8;
     }
 
 }
@@ -482,6 +491,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
                 println!("Extracted .rsrc section data: {:?}", rsrc_data);
             } 
+
 
                         // fonction récursive qui lis un directory, on lui donne un offset.
 
