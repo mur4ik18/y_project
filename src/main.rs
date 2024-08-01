@@ -6,6 +6,8 @@ pub mod util;
 
 //use relm4::gtk::glib::current_dir;
 
+use util::pe_structure::RessourceDirEntries;
+
 use crate::util::pe_structure::COFFHeader;
 use crate::util::pe_structure::COFFString;
 use crate::util::pe_structure::COFFStringTable;
@@ -405,57 +407,54 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
 }
 
 fn is_a_subdirectory(value: &[u8]) -> bool {
-    if value[0] ^ 0b00000000 == 0b10000000 {
+    if value[0] & 0b00000000 == 0b10000000 {
         return true;
     }
     return false;
 }
 
-fn find_rsrc_data(mut offset: usize, bytes: &[u8]){
+fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
     let current_dir = RessourceDir {
-        characteristics: &bytes[offset..offset+4],
-        time_date_stamp: &bytes[offset+4..offset+8],
-        major_version: &bytes[offset+8..offset+10],
-        minor_version: &bytes[offset+10..offset+12],
-        name_entries_number: le_to_usize(&bytes[offset+12..offset+14]),
-        id_entries_number: le_to_usize(&bytes[offset+14..offset+16]),
+        characteristics: &bytes[offset..offset + 4],
+        time_date_stamp: &bytes[offset + 4..offset + 8],
+        major_version: &bytes[offset + 8..offset + 10],
+        minor_version: &bytes[offset + 10..offset + 12],
+        name_entries_number: le_to_usize(&bytes[offset + 12..offset + 14]),
+        id_entries_number: le_to_usize(&bytes[offset + 14..offset + 16]),
     };
-    offset+=16;
+    offset += 16;
 
-    for _ in 0..current_dir.name_entries_number{
-        let current_name_entry = DataDirectoryEntry {
-            virtual_address: &bytes[offset..offset + 4],
-            size: &bytes[offset + 4 ..offset + 8]
+    println!("current_dir: {:?}", current_dir);
+
+    for _ in 0..current_dir.name_entries_number {
+        let current_name_entry = RessourceDirEntries {
+            name_offset: le_to_usize(&bytes[offset..offset + 4]),
+            data_entry_offset: &bytes[offset + 4..offset + 8],
         };
 
-        if is_a_subdirectory(current_name_entry.size) {
-            let subdirectory_offset = le_to_usize(current_name_entry.virtual_address);
-            find_rsrc_data(subdirectory_offset, bytes);
+        if is_a_subdirectory(current_name_entry.data_entry_offset) {
+            find_rsrc_data(current_name_entry.name_offset, bytes);
         } else {
-            println!("Data trouvée à l'adresse-> {:?}", current_name_entry.virtual_address);
+            println!("Data trouvée à l'adresse-> {:?}", current_name_entry.name_offset);
         }
 
-        offset+=8;
+        offset += 8;
     }
 
-    offset+=current_dir.name_entries_number*8;
-
-    for _ in 0..current_dir.id_entries_number{
-        let current_id_entry = DataDirectoryEntry {
-            virtual_address: &bytes[offset..offset + 4],
-            size: &bytes[offset +4 ..offset + 8]
+    for _ in 0..current_dir.id_entries_number {
+        let current_id_entry = RessourceDirEntries {
+            name_offset: le_to_usize(&bytes[offset..offset + 4]),
+            data_entry_offset: &bytes[offset + 4..offset + 8],
         };
-        
-        if is_a_subdirectory(current_id_entry.size) {
-            let subdirectory_offset = le_to_usize(current_id_entry.virtual_address);
-            find_rsrc_data(subdirectory_offset, bytes);
+
+        if is_a_subdirectory(current_id_entry.data_entry_offset) {
+            find_rsrc_data(current_id_entry.name_offset, bytes);
         } else {
-            println!("Data trouvée à l'adresse-> {:?}", current_id_entry.virtual_address);
+            println!("Data trouvée à l'adresse-> {:?} / Offset actuel -> {:?}", current_id_entry.name_offset, offset);
         }
 
-        offset+=8;
+        offset += 8;
     }
-
 }
 
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
@@ -485,7 +484,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(&mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-                println!("Extracted .text section data: {:?}", text_data.extracted_code);
+                //println!("Extracted .text section data: {:?}", text_data.extracted_code);
             } 
         
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
