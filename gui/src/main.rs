@@ -4,7 +4,7 @@ use gtk::prelude::*;
 
 use relm4::{
     factory, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
-    RelmApp, SimpleComponent,
+    MessageBroker, RelmApp, SimpleComponent,
 };
 use relm4_components::open_button::{OpenButton, OpenButtonSettings};
 use relm4_components::open_dialog::OpenDialogSettings;
@@ -14,7 +14,8 @@ use y_project;
 use gtk::prelude::*;
 //use gtk::prelude::{BoxExt, ButtonExt, GtkWindowExt, OrientableExt};
 use relm4::factory::{
-    DynamicIndex, FactoryComponent, FactorySender, FactoryVecDeque, FactoryVecDequeConnector,
+    positions::GridPosition, DynamicIndex, FactoryComponent, FactorySender, FactoryVecDeque,
+    FactoryVecDequeConnector, Position,
 };
 //use relm4::*;
 //use relm4::{ComponentParts, ComponentSender, RelmApp, RelmWidgetExt, SimpleComponent};
@@ -33,27 +34,40 @@ enum MVLineOutput {
     None,
 }
 
+struct MVLWidgets {
+    label: gtk::Label,
+}
+
+impl Position<GridPosition, DynamicIndex> for MVLine {
+    fn position(&self, index: &DynamicIndex) -> GridPosition {
+        let index = index.current_index();
+        let x = index / 16;
+        let y = index % 16;
+        GridPosition {
+            column: y as i32,
+            row: x as i32,
+            width: 1,
+            height: 1,
+        }
+    }
+}
+
 #[relm4::factory]
 impl factory::FactoryComponent for MVLine {
     type Init = String;
     type Input = MVLineMsg;
     type Output = MVLineOutput;
     type CommandOutput = ();
-    type ParentWidget = gtk::Box;
+    type ParentWidget = gtk::Grid;
+
+    //type Widgets = MVLWidgets;
 
     view! {
         #[root]
         gtk::Box {
-            set_orientation: gtk::Orientation::Horizontal,
-            set_spacing: 10,
             gtk::Label::new(Some(self.value.as_str())),
-
-
-            //#[name = "list"]
-            //gtk::ListBox,
         }
     }
-
     fn init_model(
         value: Self::Init,
         _index: &factory::DynamicIndex,
@@ -72,9 +86,11 @@ struct MemoryView {
 
 #[derive(Debug)]
 enum MViewMsg {
-    Draw,
+    Draw(Vec<u8>),
     None,
 }
+
+static DIALOG_BROKER: MessageBroker<MViewMsg> = MessageBroker::new();
 
 #[derive(Debug)]
 enum MViewOutput {
@@ -89,13 +105,12 @@ impl SimpleComponent for MemoryView {
 
     view! {
         gtk::Box {
-            gtk::Button {
-                set_label: "tap",
-                connect_clicked => MViewMsg::Draw,
-
-            },
             #[local_ref]
-            linebox -> gtk::Box {},
+            linebox -> gtk::Grid {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_column_spacing: 5,
+                    set_row_spacing: 5,
+                },
         }
     }
 
@@ -105,7 +120,7 @@ impl SimpleComponent for MemoryView {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let lines = FactoryVecDeque::builder()
-            .launch(gtk::Box::default())
+            .launch(gtk::Grid::default())
             .forward(sender.input_sender(), |msg| match msg {
                 MVLineOutput::None => MViewMsg::None,
             });
@@ -119,12 +134,14 @@ impl SimpleComponent for MemoryView {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         let mut lines_guard = self.lines.guard();
         match msg {
-            MViewMsg::Draw => {
-                lines_guard.push_back(String::from("0F"));
-                self.created_lines = self.created_lines.wrapping_add(1);
+            MViewMsg::Draw(v) => {
+                for i in v {
+                    lines_guard.push_back(format!("{:02x} ", i));
+                    self.created_lines = self.created_lines.wrapping_add(1);
+                }
             }
             MViewMsg::None => {}
         }
@@ -137,8 +154,7 @@ struct App {
     // binary
     bindata: Vec<u8>,
     //bin_view: Component<gtk::TextView>,
-    bin_buffer: gtk::TextBuffer,
-
+    
     memory_view_component: Controller<MemoryView>,
 }
 
@@ -187,16 +203,6 @@ impl SimpleComponent for App {
                         set_min_content_width: 400,
                         #[local_ref]
                         line_list -> gtk::Box{},
-                       // #[wrap(Some)]
-                       // set_child = &gtk::TextView {
-                       //     set_wrap_mode: gtk::WrapMode::Word,
-                            // set buffer
-                       //     set_buffer: Some(&model.bin_buffer),
-
-                            // Is visible when you open new file
-                            //#[watch]
-                            //set_visible: model.bindata.is_some(),
-                       // }
                     },
                 }
             }
@@ -232,7 +238,6 @@ impl SimpleComponent for App {
         let model = App {
             open_button: open_button,
             bindata: bindata,
-            bin_buffer: gtk::TextBuffer::new(None),
             memory_view_component: memview,
         };
 
@@ -242,22 +247,14 @@ impl SimpleComponent for App {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, msg: Self::Input, _: ComponentSender<Self>) {
+    fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             Msg::Open(path) => {
                 println!("* Opened file {path:?} *");
                 // save file binaru to structure
                 self.bindata = y_project::read_file(&path.into_os_string().into_string().unwrap());
-
-                // Convert Vec to String
-                let s: String = self
-                    .bindata
-                    .iter()
-                    .map(|byte| format!("{:02x} ", byte))
-                    .collect();
-
-                // Convert String to str for buffer
-                self.bin_buffer.set_text(s.as_str());
+                self.memory_view_component
+                    .emit(MViewMsg::Draw(self.bindata.clone()));
             }
             Msg::None => {}
         }
