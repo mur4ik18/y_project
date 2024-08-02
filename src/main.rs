@@ -413,6 +413,12 @@ fn is_a_subdirectory(value: &[u8]) -> bool {
     return false;
 }
 
+fn msb_to_0(msb: usize) {
+    let mask = 1 << 31;
+    let mask = !mask;
+    num & mask;
+}
+
 fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
     let current_dir = RessourceDir {
         characteristics: &bytes[offset..offset + 4],
@@ -431,9 +437,11 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
+        println!("name_offset: {:?}, data_entry_offset {:?}", current_name_entry.name_offset, current_name_entry.data_entry_offset);
+        
 
         if is_a_subdirectory(current_name_entry.data_entry_offset) {
-            find_rsrc_data(current_name_entry.name_offset, bytes);
+            find_rsrc_data(current_name_entry.data_entry_offset, bytes);
         } else {
             println!("Data trouvée à l'adresse-> {:?}", current_name_entry.name_offset);
         }
@@ -446,6 +454,8 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
+        println!("name_offset: {:?}, data_entry_offset {:?}", current_id_entry.name_offset, current_id_entry.data_entry_offset);
+        
 
         if is_a_subdirectory(current_id_entry.data_entry_offset) {
             find_rsrc_data(current_id_entry.name_offset, bytes);
@@ -456,6 +466,18 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
         offset += 8;
     }
 }
+
+
+//IMAGE_RESOURCE_DIRECTORY principal
+//Entrée 1: Nom (ID) = 0x0000000A, OffsetToData = 0x80000018 (sous-répertoire)
+//Sous-répertoire 1 (à l'offset 0x18)
+//Entrée 1: Nom (ID) = 0x00000065, OffsetToData = 0x80000030 (sous-répertoire)
+//Sous-répertoire 2 (à l'offset 0x30)
+//Entrée 1: Nom (ID) = 0x00000409, OffsetToData = 0x00000048 (données)
+//IMAGE_RESOURCE_DATA_ENTRY (à l'offset 0x48)
+//OffsetToData:        0x0000B058 (adresse des données)
+//Size:                0x0000000D
+//CodePage:            0x00000000
 
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
     println!("*[+] Obtaining file infos...");
@@ -484,7 +506,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(&mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-                //println!("Extracted .text section data: {:?}", text_data.extracted_code);
+                println!("Extracted .text section data: {:?}", text_data.extracted_code);
             } 
         
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
