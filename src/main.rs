@@ -238,11 +238,11 @@ fn extract_section_table<'a>(bytes: &'a[u8], pe_offset: usize, file_coff_header:
             )
             .trim_end_matches('\0')
             .to_string(),
-            virtual_size: le_to_u32(
+            virtual_size: le_to_usize(
                 &bytes[section_table_offset + 8 + for_offset_section_table
                     ..section_table_offset + 12 + for_offset_section_table],
             ),
-            virtual_address: le_to_u32(
+            virtual_address: le_to_usize(
                 &bytes[section_table_offset + 12 + for_offset_section_table
                     ..section_table_offset + 16 + for_offset_section_table],
             ),
@@ -387,6 +387,9 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
             }
             ".rsrc" => {
                 let rsrc_section_data = section.raw_data;
+                let rsrc_virtual_size = section.virtual_size;
+                let rsrc_ptr_to_raw_data = section.ptr_to_raw_data;
+                let rsrc_virtual_address = section.virtual_address;
                 sections_data.sections.insert(
                     section.name.clone(),
                     SectionData::Rsrc(RessourceDir {
@@ -398,7 +401,7 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                         id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
                     }),
                 );
-                find_rsrc_data(0, rsrc_section_data);
+                find_rsrc_data(0, rsrc_section_data, rsrc_virtual_size, rsrc_ptr_to_raw_data, rsrc_virtual_address);
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
@@ -417,7 +420,7 @@ fn msb_to_0(value: &[u8]) -> Vec<u8> {
     result
 }
 
-fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
+fn find_rsrc_data(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
     let current_dir = RessourceDir {
         characteristics: &bytes[offset..offset + 4],
         time_date_stamp: &bytes[offset + 4..offset + 8],
@@ -428,20 +431,24 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
     };
     offset += 16;
 
-    println!("current_dir: {:?}", current_dir);
-
     for _ in 0..current_dir.name_entries_number {
         let mut current_name_entry = RessourceDirEntries {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8], 
         };
-        println!("name_offset: {:?}, data_entry_offset {:?}", current_name_entry.name_offset, current_name_entry.data_entry_offset);
-        
+
         if is_a_subdirectory(&current_name_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_name_entry.data_entry_offset);
-            find_rsrc_data(le_to_usize(offset), bytes);
+            find_rsrc_data(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
-            println!("Data trouvée à l'adresse-> {:?}", current_name_entry.name_offset);
+            let data_entry = RessourceDataEntry{
+                data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
+                size: le_to_usize(&bytes[offset + 12..offset + 16]),
+                codepage: &bytes[offset + 16..offset + 20],
+                reserved: &bytes[offset + 20..offset + 24]
+            };
+            println!("La data entry -> {:?}", data_entry);
+            let offset = data_entry.data_rva - virtual_address;
         }
 
         offset += 8;
@@ -452,40 +459,27 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8]) {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
-        println!("name_offset: {:?}, data_entry_offset {:?}", current_id_entry.name_offset, current_id_entry.data_entry_offset);
-        
+
         if is_a_subdirectory(&current_id_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_id_entry.data_entry_offset);
-            find_rsrc_data(le_to_usize(offset), bytes);
+            find_rsrc_data(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
-            println!("Data trouvée à l'adresse-> {:?} / Offset actuel -> {:?}", current_id_entry.name_offset, offset);
-            let data_entry = RessourceDataEntry{
-                data_rva: &bytes[offset + 8..offset + 12],
+           let data_entry = RessourceDataEntry{
+                data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
                 size: le_to_usize(&bytes[offset + 12..offset + 16]),
                 codepage: &bytes[offset + 16..offset + 20],
                 reserved: &bytes[offset + 20..offset + 24]
             };
             println!("La data entry -> {:?}", data_entry);
-            let data_rva = le_to_usize(data_entry.data_rva);
-            // let data = &bytes[data_rva..data_rva + data_entry.size];
-            // println!("Data extraite: {:?}", String::from_utf8_lossy(data));
+            let offset = data_entry.data_rva - virtual_address;
+
+            // let data = &bytes[data_entry.data_rva-virtual_address+ptr_raw_data..data_entry.data_rva-virtual_address+ptr_raw_data+data_entry.size];
+            // println!("La data -> {:?}", data);
         }
 
         offset += 8;
     }
 }
-
-
-//IMAGE_RESOURCE_DIRECTORY principal
-//Entrée 1: Nom (ID) = 0x0000000A, OffsetToData = 0x80000018 (sous-répertoire)
-//Sous-répertoire 1 (à l'offset 0x18)
-//Entrée 1: Nom (ID) = 0x00000065, OffsetToData = 0x80000030 (sous-répertoire)
-//Sous-répertoire 2 (à l'offset 0x30)
-//Entrée 1: Nom (ID) = 0x00000409, OffsetToData = 0x00000048 (données)
-//IMAGE_RESOURCE_DATA_ENTRY (à l'offset 0x48)
-//OffsetToData:        0x0000B058 (adresse des données)
-//Size:                0x0000000D
-//CodePage:            0x00000000
 
 fn get_file_data(file_signature: &str, bytes: &[u8]) {
     println!("*[+] Obtaining file infos...");
@@ -519,22 +513,8 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
         
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
               //  println!("Extracted .rsrc section data: {:?}", rsrc_data);
-            } 
+            }
 
-
-                        // fonction récursive qui lis un directory, on lui donne un offset.
-
-                        // elle lis le nombre d'entrée de nom,
-                        // si c'est un subdirectory alors elle se rappelle elle même
-                        // sinon elle stocke les données de la name entry
-
-                        // elle lis le nombre d'entrée d'id
-                        // si c'est un subdirectory alors elle se rappelle elle même
-                        // sinon elle stocke les données de l'id entry
-
-                        // si bit poids fort == 1 alors entrée de donnée sinon subdir
-                        // les 31 autres bits sont l'offset des données
-            
             // println!("Dos Header: {:x?}", dos_header);
             // println!("Dos Stub: {:x?}", dos_stub);
             // println!("Coff Header: {:x?}", coff_header);
@@ -542,7 +522,10 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             // println!("Optionnal Header: {:x?}", opt_header);
             // println!("Section Table: {:?}", section_table);
             // println!("String Table: {:?}", string_table);
-            println!("Data test : {:?}", &bytes[45157..45170]);
+            // println!("Data test : {:?}", &bytes[45157..45170]);
+            println!("Data test : {:?}", &bytes[20056..20069]);
+            // Section .rsrc -> virtual_address: 45056
+
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
