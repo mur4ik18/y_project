@@ -140,8 +140,8 @@ pub struct StringTable {
 #[derive(Debug)]
 pub struct Section<'a> {
     pub name: String,
-    pub virtual_size: u32,
-    pub virtual_address: u32,
+    pub virtual_size: usize,
+    pub virtual_address: usize,
     pub raw_data_size: usize,
     pub ptr_to_raw_data: usize,
     pub ptr_to_relocations: usize,
@@ -180,9 +180,9 @@ pub struct RessourceDir<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct RessourceDirEntries {
+pub struct RessourceDirEntries<'a> {
     pub name_offset: usize,
-    pub data_entry_offset: usize,
+    pub data_entry_offset: &'a[u8],
 }
 
 #[allow(dead_code)]
@@ -195,7 +195,7 @@ pub struct RessourceDirString<'a> {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct RessourceDataEntry<'a> {
-    pub data_rva: &'a [u8],
+    pub data_rva: usize,
     pub size: usize,
     pub codepage: &'a [u8],
     pub reserved: &'a [u8],
