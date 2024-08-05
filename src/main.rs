@@ -401,7 +401,8 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                         id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
                     }),
                 );
-                find_rsrc_data(0, rsrc_section_data, rsrc_virtual_size, rsrc_ptr_to_raw_data, rsrc_virtual_address);
+                find_rsrc_data_adresses(0, rsrc_section_data, rsrc_virtual_size, rsrc_ptr_to_raw_data, rsrc_virtual_address);
+                
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
@@ -420,7 +421,7 @@ fn msb_to_0(value: &[u8]) -> Vec<u8> {
     result
 }
 
-fn find_rsrc_data(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
+fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
     let current_dir = RessourceDir {
         characteristics: &bytes[offset..offset + 4],
         time_date_stamp: &bytes[offset + 4..offset + 8],
@@ -439,7 +440,7 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_
 
         if is_a_subdirectory(&current_name_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_name_entry.data_entry_offset);
-            find_rsrc_data(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
             let data_entry = RessourceDataEntry{
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
@@ -462,7 +463,7 @@ fn find_rsrc_data(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_
 
         if is_a_subdirectory(&current_id_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_id_entry.data_entry_offset);
-            find_rsrc_data(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
            let data_entry = RessourceDataEntry{
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
