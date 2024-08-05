@@ -92,7 +92,7 @@ impl SimpleComponent for App {
             // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
         let memview = MemoryView::builder()
-            .launch(12)
+            .launch(0)
             .forward(sender.input_sender(), |msg| match msg {
                 MViewOutput::None => Msg::None,
             });

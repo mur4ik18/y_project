@@ -1,8 +1,9 @@
 use gtk::prelude::*;
 use relm4::{
     factory, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
-    RelmApp, SimpleComponent,
+    RelmApp, SimpleComponent, typed_view::grid::{RelmGridItem, TypedGridView},
 };
+
 
 use relm4::factory::{
     positions::GridPosition, DynamicIndex, FactoryComponent, FactorySender, FactoryVecDeque,
@@ -12,6 +13,12 @@ use relm4::factory::{
 #[derive(Debug)]
 struct MVLine {
     value: String,
+}
+
+impl MVLine {
+    fn new(value: String) -> Self {
+        Self {value}
+    }
 }
 
 #[derive(Debug)]
@@ -26,50 +33,38 @@ struct MVLWidgets {
     label: gtk::Label,
 }
 
-impl Position<GridPosition, DynamicIndex> for MVLine {
-    fn position(&self, index: &DynamicIndex) -> GridPosition {
-        let index = index.current_index();
-        let x = index / 16;
-        let y = index % 16;
-        GridPosition {
-            column: y as i32,
-            row: x as i32,
-            width: 1,
-            height: 1,
+impl RelmGridItem for MVLine {
+    type Root = gtk::Box;
+    type Widgets = MVLWidgets;
+
+    fn setup(_item: &gtk::ListItem) -> (gtk::Box, MVLWidgets) {
+        relm4::view! {
+            my_box = gtk::Box {
+                #[name="label"]
+                gtk::Label,
+            },
         }
+        let widgets = MVLWidgets {
+            label,
+        };
+
+        (my_box, widgets)
     }
-}
 
-#[relm4::factory]
-impl factory::FactoryComponent for MVLine {
-    type Init = String;
-    type Input = MVLineMsg;
-    type Output = MVLineOutput;
-    type CommandOutput = ();
-    type ParentWidget = gtk::Grid;
+    
+    fn bind(&mut self, widgets: &mut Self::Widgets, _root: &mut Self::Root) {
+        let MVLWidgets {
+            label,
+        } = widgets;
 
-    //type Widgets = MVLWidgets;
-
-    view! {
-        #[root]
-        gtk::Box {
-            gtk::Label::new(Some(self.value.as_str())),
-        }
-    }
-    fn init_model(
-        value: Self::Init,
-        _index: &factory::DynamicIndex,
-        _sender: FactorySender<Self>,
-    ) -> Self {
-        Self { value }
+        label.set_label(&format!("{} ", self.value));
     }
 }
 
 #[derive(Debug)]
 pub struct MemoryView {
     created_lines: u64,
-    lines: FactoryVecDeque<MVLine>,
-    // max_address: u64,
+    lines : TypedGridView<MVLine, gtk::MultiSelection>,
 }
 
 #[derive(Debug)]
@@ -93,10 +88,10 @@ impl SimpleComponent for MemoryView {
     view! {
         gtk::Box {
             #[local_ref]
-            linebox -> gtk::Grid {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_column_spacing: 5,
-                    set_row_spacing: 5,
+            linebox -> gtk::GridView {
+                set_orientation: gtk::Orientation::Vertical,
+                set_min_columns: 16,
+                set_enable_rubberband: true,
                 },
         }
     }
@@ -106,27 +101,27 @@ impl SimpleComponent for MemoryView {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let lines = FactoryVecDeque::builder()
-            .launch(gtk::Grid::default())
-            .forward(sender.input_sender(), |msg| match msg {
-                MVLineOutput::None => MViewMsg::None,
-            });
+        let mut lines = TypedGridView::new();
 
         let model = MemoryView {
             created_lines: counter,
             lines,
         };
-        let linebox = model.lines.widget();
+        let linebox = &model.lines.view;
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
-        let mut lines_guard = self.lines.guard();
+    fn update(&mut self, msg: Self::Input, _: ComponentSender<Self>) {
         match msg {
             MViewMsg::Draw(v) => {
-                for i in v {
-                    lines_guard.push_back(format!("{:02x} ", i));
+                let mut i = 0;
+                for j in v {
+                    if (self.created_lines%16==0) {
+                        self.lines.append(MVLine::new(format!("{:06x} ", i)));
+                        i+=16;
+                    }
+                    self.lines.append(MVLine::new(format!("{:02x} ", j)));
                     self.created_lines = self.created_lines.wrapping_add(1);
                 }
             }
