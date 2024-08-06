@@ -187,16 +187,22 @@ pub struct RessourceDirEntries<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct RessourceDirString<'a> {
-    pub length: usize,
-    pub unicode_string: &'a [u8],
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
 pub struct RessourceDataEntry<'a> {
     pub data_rva: usize,
     pub size: usize,
     pub codepage: &'a [u8],
     pub reserved: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RessourceAdress {
+    pub size: usize,
+    pub address: usize
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RessourceAdresses {
+    pub adresses: Vec<RessourceAdress>,
 }
