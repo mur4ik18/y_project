@@ -6,6 +6,8 @@ pub mod util;
 
 //use relm4::gtk::glib::current_dir;
 
+use util::pe_structure::RessourceAdress;
+use util::pe_structure::RessourceAdresses;
 use util::pe_structure::RessourceDataEntry;
 use util::pe_structure::RessourceDirEntries;
 
@@ -373,7 +375,7 @@ struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
 }
 
-fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data: &mut SectionsData<'a>) {
+fn extract_section_datas<'a>(bytes: &[u8], section_table: &'a mut SectionTable, sections_data: &mut SectionsData<'a>) {
     println!("*[+] Extracting data from sections...");
     for section in section_table.sections.iter_mut() {
         match section.name.as_str() {
@@ -386,23 +388,28 @@ fn extract_section_datas<'a>(section_table: &'a mut SectionTable, sections_data:
                 );
             }
             ".rsrc" => {
-                let rsrc_section_data = section.raw_data;
-                let rsrc_virtual_size = section.virtual_size;
-                let rsrc_ptr_to_raw_data = section.ptr_to_raw_data;
-                let rsrc_virtual_address = section.virtual_address;
+                let section_data = section.raw_data;
+                let virtual_size = section.virtual_size;
+                let ptr_to_raw_data = section.ptr_to_raw_data;
+                let virtual_address = section.virtual_address;
                 sections_data.sections.insert(
                     section.name.clone(),
                     SectionData::Rsrc(RessourceDir {
-                        characteristics: &rsrc_section_data[0..4],
-                        time_date_stamp: &rsrc_section_data[4..8],
-                        major_version: &rsrc_section_data[8..10],
-                        minor_version: &rsrc_section_data[10..12],
-                        name_entries_number: le_to_usize(&rsrc_section_data[12..14]),
-                        id_entries_number: le_to_usize(&rsrc_section_data[14..16]),
+                        characteristics: &section_data[0..4],
+                        time_date_stamp: &section_data[4..8],
+                        major_version: &section_data[8..10],
+                        minor_version: &section_data[10..12],
+                        name_entries_number: le_to_usize(&section_data[12..14]),
+                        id_entries_number: le_to_usize(&section_data[14..16]),
                     }),
                 );
-                find_rsrc_data_adresses(0, rsrc_section_data, rsrc_virtual_size, rsrc_ptr_to_raw_data, rsrc_virtual_address);
-                
+                let mut rsrc_data_adresses = RessourceAdresses {
+                    adresses: Vec::new(),
+                };
+                find_rsrc_data_adresses(&mut rsrc_data_adresses, 0, section_data, virtual_size, ptr_to_raw_data, virtual_address);
+                for adresses in rsrc_data_adresses.adresses {
+                    println!("*[+] Found data -> {:?}", &bytes[adresses.address..adresses.address+adresses.size]);
+                }
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
@@ -421,7 +428,7 @@ fn msb_to_0(value: &[u8]) -> Vec<u8> {
     result
 }
 
-fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
+fn find_rsrc_data_adresses(rsrc_adresses: &mut RessourceAdresses ,mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
     let current_dir = RessourceDir {
         characteristics: &bytes[offset..offset + 4],
         time_date_stamp: &bytes[offset + 4..offset + 8],
@@ -440,7 +447,7 @@ fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize,
 
         if is_a_subdirectory(&current_name_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_name_entry.data_entry_offset);
-            find_rsrc_data_adresses(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(rsrc_adresses, le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
             let data_entry = RessourceDataEntry{
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
@@ -448,8 +455,11 @@ fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize,
                 codepage: &bytes[offset + 16..offset + 20],
                 reserved: &bytes[offset + 20..offset + 24]
             };
-            println!("La data entry -> {:?}", data_entry);
-            let offset = data_entry.data_rva - virtual_address;
+            let data = RessourceAdress {
+                size: data_entry.size,
+                address: data_entry.data_rva-virtual_address+ptr_raw_data
+            };
+            rsrc_adresses.adresses.push(data);
         }
 
         offset += 8;
@@ -463,7 +473,7 @@ fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize,
 
         if is_a_subdirectory(&current_id_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_id_entry.data_entry_offset);
-            find_rsrc_data_adresses(le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(rsrc_adresses, le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
         } else {
            let data_entry = RessourceDataEntry{
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
@@ -471,11 +481,11 @@ fn find_rsrc_data_adresses(mut offset: usize, bytes: &[u8], virtual_size: usize,
                 codepage: &bytes[offset + 16..offset + 20],
                 reserved: &bytes[offset + 20..offset + 24]
             };
-            println!("La data entry -> {:?}", data_entry);
-            let offset = data_entry.data_rva - virtual_address;
-
-            // let data = &bytes[data_entry.data_rva-virtual_address+ptr_raw_data..data_entry.data_rva-virtual_address+ptr_raw_data+data_entry.size];
-            // println!("La data -> {:?}", data);
+            let data = RessourceAdress {
+                size: data_entry.size,
+                address: data_entry.data_rva-virtual_address+ptr_raw_data
+            };
+            rsrc_adresses.adresses.push(data);
         }
 
         offset += 8;
@@ -506,7 +516,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             replace_section_names(&string_table, &mut section_table);
 
-            extract_section_datas(&mut section_table, &mut sections_data);
+            extract_section_datas(bytes, &mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
               //  println!("Extracted .text section data: {:?}", text_data.extracted_code);
@@ -515,17 +525,6 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
               //  println!("Extracted .rsrc section data: {:?}", rsrc_data);
             }
-
-            // println!("Dos Header: {:x?}", dos_header);
-            // println!("Dos Stub: {:x?}", dos_stub);
-            // println!("Coff Header: {:x?}", coff_header);
-            // println!("Symbol Table: {:x?}", symbol_table);
-            // println!("Optionnal Header: {:x?}", opt_header);
-            // println!("Section Table: {:?}", section_table);
-            // println!("String Table: {:?}", string_table);
-            // println!("Data test : {:?}", &bytes[45157..45170]);
-            println!("Data test : {:?}", &bytes[20056..20069]);
-            // Section .rsrc -> virtual_address: 45056
 
         }
         "Executable and Linkable Format (ELF)" => {
