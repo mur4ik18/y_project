@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::env;
-use std::collections::HashMap;
 use std::fs;
 pub mod util;
 
@@ -161,16 +161,19 @@ fn extract_opt_header(bytes: &[u8], pe_offset: usize) -> OptionalHeader {
     file_optional_header
 }
 
-fn extract_symbol_table<'a>(bytes: &'a[u8], pe_offset: usize, coff_header: COFFHeader<'a>) -> SymbolTable<'a> {
+fn extract_symbol_table<'a>(
+    bytes: &'a [u8],
+    pe_offset: usize,
+    coff_header: COFFHeader<'a>,
+) -> SymbolTable<'a> {
     println!("*[+] Extracting Symbol Table...");
     let mut symbol_table = SymbolTable {
         symbols: Vec::new(),
     };
-    
+
     let mut symbol_table_for_offset: usize = 0;
     for _i in 0..coff_header.symbol_count {
-        let name_bytes = &bytes[coff_header.symbol_table_pointer
-            + symbol_table_for_offset
+        let name_bytes = &bytes[coff_header.symbol_table_pointer + symbol_table_for_offset
             ..coff_header.symbol_table_pointer + 8 + symbol_table_for_offset];
         let name = String::from_utf8_lossy(name_bytes)
             .trim_end_matches('\0')
@@ -186,7 +189,9 @@ fn extract_symbol_table<'a>(bytes: &'a[u8], pe_offset: usize, coff_header: COFFH
                 ..coff_header.symbol_table_pointer + 16 + symbol_table_for_offset],
             storage_class: &bytes[coff_header.symbol_table_pointer + 16 + symbol_table_for_offset
                 ..coff_header.symbol_table_pointer + 17 + symbol_table_for_offset],
-            number_aux_symbols: &bytes[coff_header.symbol_table_pointer + 17 + symbol_table_for_offset
+            number_aux_symbols: &bytes[coff_header.symbol_table_pointer
+                + 17
+                + symbol_table_for_offset
                 ..coff_header.symbol_table_pointer + 18 + symbol_table_for_offset],
         });
         symbol_table_for_offset += 18;
@@ -194,7 +199,7 @@ fn extract_symbol_table<'a>(bytes: &'a[u8], pe_offset: usize, coff_header: COFFH
     symbol_table
 }
 
-fn extract_string_table(bytes: &[u8], coff_header: COFFHeader) -> StringTable{
+fn extract_string_table(bytes: &[u8], coff_header: COFFHeader) -> StringTable {
     println!("*[+] Extracting String Table...");
     let string_table_offset = coff_header.symbol_table_pointer + (18 * coff_header.symbol_count);
 
@@ -214,7 +219,11 @@ fn extract_string_table(bytes: &[u8], coff_header: COFFHeader) -> StringTable{
     string_table
 }
 
-fn extract_section_table<'a>(bytes: &'a[u8], pe_offset: usize, file_coff_header: COFFHeader<'a>) -> SectionTable<'a> {
+fn extract_section_table<'a>(
+    bytes: &'a [u8],
+    pe_offset: usize,
+    file_coff_header: COFFHeader<'a>,
+) -> SectionTable<'a> {
     println!("*[+] Extracting Section Table...");
     let mut section_table = SectionTable {
         sections: Vec::new(),
@@ -353,7 +362,7 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
             name = name.trim_start_matches("/").to_string();
             let index: usize = name.parse().unwrap();
             section.name = string_table.strings[index].clone();
-        }          
+        }
     }
 }
 
@@ -375,7 +384,11 @@ struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
 }
 
-fn extract_section_datas<'a>(bytes: &[u8], section_table: &'a mut SectionTable, sections_data: &mut SectionsData<'a>) {
+fn extract_section_datas<'a>(
+    bytes: &[u8],
+    section_table: &'a mut SectionTable,
+    sections_data: &mut SectionsData<'a>,
+) {
     println!("*[+] Extracting data from sections...");
     for section in section_table.sections.iter_mut() {
         match section.name.as_str() {
@@ -406,9 +419,19 @@ fn extract_section_datas<'a>(bytes: &[u8], section_table: &'a mut SectionTable, 
                 let mut rsrc_data_adresses = RessourceAdresses {
                     adresses: Vec::new(),
                 };
-                find_rsrc_data_adresses(&mut rsrc_data_adresses, 0, section_data, virtual_size, ptr_to_raw_data, virtual_address);
+                find_rsrc_data_adresses(
+                    &mut rsrc_data_adresses,
+                    0,
+                    section_data,
+                    virtual_size,
+                    ptr_to_raw_data,
+                    virtual_address,
+                );
                 for adresses in rsrc_data_adresses.adresses {
-                    println!("*[+] Found data -> {:?}", &bytes[adresses.address..adresses.address+adresses.size]);
+                    println!(
+                        "*[+] Found data -> {:?}",
+                        &bytes[adresses.address..adresses.address + adresses.size]
+                    );
                 }
             }
             _ => {
@@ -428,7 +451,14 @@ fn msb_to_0(value: &[u8]) -> Vec<u8> {
     result
 }
 
-fn find_rsrc_data_adresses(rsrc_adresses: &mut RessourceAdresses ,mut offset: usize, bytes: &[u8], virtual_size: usize, ptr_raw_data: usize, virtual_address: usize) {
+fn find_rsrc_data_adresses(
+    rsrc_adresses: &mut RessourceAdresses,
+    mut offset: usize,
+    bytes: &[u8],
+    virtual_size: usize,
+    ptr_raw_data: usize,
+    virtual_address: usize,
+) {
     let current_dir = RessourceDir {
         characteristics: &bytes[offset..offset + 4],
         time_date_stamp: &bytes[offset + 4..offset + 8],
@@ -442,23 +472,189 @@ fn find_rsrc_data_adresses(rsrc_adresses: &mut RessourceAdresses ,mut offset: us
     for _ in 0..current_dir.name_entries_number {
         let mut current_name_entry = RessourceDirEntries {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
-            data_entry_offset: &bytes[offset + 4..offset + 8], 
+            data_entry_offset: &bytes[offset + 4..offset + 8],
         };
 
         if is_a_subdirectory(&current_name_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_name_entry.data_entry_offset);
-            find_rsrc_data_adresses(rsrc_adresses, le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(
+                rsrc_adresses,
+                le_to_usize(offset),
+                bytes,
+                virtual_size,
+                ptr_raw_data,
+                virtual_address,
+            );
         } else {
-            let data_entry = RessourceDataEntry{
+            let data_entry = RessourceDataEntry {
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
                 size: le_to_usize(&bytes[offset + 12..offset + 16]),
                 codepage: &bytes[offset + 16..offset + 20],
-                reserved: &bytes[offset + 20..offset + 24]
+                reserved: &bytes[offset + 20..offset + 24],
             };
+            let codepage: &str;
+
+            match le_to_u16(data_entry.codepage) {
+                37 => codepage = "IBM037",
+                437 => codepage = "IBM437",
+                500 => codepage = "IBM500",
+                708 => codepage = "ASMO-708",
+                709 => codepage = "",
+                710 => codepage = "",
+                720 => codepage = "DOS-720",
+                737 => codepage = "ibm737",
+                775 => codepage = "ibm775",
+                850 => codepage = "ibm850",
+                852 => codepage = "ibm852",
+                855 => codepage = "IBM855",
+                857 => codepage = "ibm857",
+                858 => codepage = "IBM00858",
+                860 => codepage = "IBM860",
+                861 => codepage = "ibm861",
+                862 => codepage = "DOS-862",
+                863 => codepage = "IBM863",
+                864 => codepage = "IBM864",
+                865 => codepage = "IBM865",
+                866 => codepage = "cp866",
+                869 => codepage = "ibm869",
+                870 => codepage = "IBM870",
+                874 => codepage = "windows-874",
+                875 => codepage = "cp875",
+                932 => codepage = "shift_jis",
+                936 => codepage = "gb2312",
+                949 => codepage = "ks_c_5601-1987",
+                950 => codepage = "big5",
+                1026 => codepage = "IBM1026",
+                1047 => codepage = "IBM01047",
+                1140 => codepage = "IBM01140",
+                1141 => codepage = "IBM01141",
+                1142 => codepage = "IBM01142",
+                1143 => codepage = "IBM01143",
+                1144 => codepage = "IBM01144",
+                1145 => codepage = "IBM01145",
+                1146 => codepage = "IBM01146",
+                1147 => codepage = "IBM01147",
+                1148 => codepage = "IBM01148",
+                1149 => codepage = "IBM01149",
+                1200 => codepage = "utf-16",
+                1201 => codepage = "unicodeFFFE",
+                1250 => codepage = "windows-1250",
+                1251 => codepage = "windows-1251",
+                1252 => codepage = "windows-1252",
+                1253 => codepage = "windows-1253",
+                1254 => codepage = "windows-1254",
+                1255 => codepage = "windows-1255",
+                1256 => codepage = "windows-1256",
+                1257 => codepage = "windows-1257",
+                1258 => codepage = "windows-1258",
+                1361 => codepage = "Johab",
+                10000 => codepage = "macintosh",
+                10001 => codepage = "x-mac-japanese",
+                10002 => codepage = "x-mac-chinesetrad",
+                10003 => codepage = "x-mac-korean",
+                10004 => codepage = "x-mac-arabic",
+                10005 => codepage = "x-mac-hebrew",
+                10006 => codepage = "x-mac-greek",
+                10007 => codepage = "x-mac-cyrillic",
+                10008 => codepage = "x-mac-chinesesimp",
+                10010 => codepage = "x-mac-romanian",
+                10017 => codepage = "x-mac-ukrainian",
+                10021 => codepage = "x-mac-thai",
+                10029 => codepage = "x-mac-ce",
+                10079 => codepage = "x-mac-icelandic",
+                10081 => codepage = "x-mac-turkish",
+                10082 => codepage = "x-mac-croatian",
+                12000 => codepage = "utf-32",
+                12001 => codepage = "utf-32BE",
+                20000 => codepage = "x-Chinese_CNS",
+                20001 => codepage = "x-cp20001",
+                20002 => codepage = "x_Chinese-Eten",
+                20003 => codepage = "x-cp20003",
+                20004 => codepage = "x-cp20004",
+                20005 => codepage = "x-cp20005",
+                20105 => codepage = "x-IA5",
+                20106 => codepage = "x-IA5-German",
+                20107 => codepage = "x-IA5-Swedish",
+                20108 => codepage = "x-IA5-Norwegian",
+                20127 => codepage = "us-ascii",
+                20261 => codepage = "x-cp20261",
+                20269 => codepage = "x-cp20269",
+                20273 => codepage = "IBM273",
+                20277 => codepage = "IBM277",
+                20278 => codepage = "IBM278",
+                20280 => codepage = "IBM280",
+                20284 => codepage = "IBM284",
+                20285 => codepage = "IBM285",
+                20290 => codepage = "IBM290",
+                20297 => codepage = "IBM297",
+                20420 => codepage = "IBM420",
+                20423 => codepage = "IBM423",
+                20424 => codepage = "IBM424",
+                20833 => codepage = "x-EBCDIC-KoreanExtended",
+                20838 => codepage = "IBM-Thai",
+                20866 => codepage = "koi8-r",
+                20871 => codepage = "IBM871",
+                20880 => codepage = "IBM880",
+                20905 => codepage = "IBM905",
+                20924 => codepage = "IBM00924",
+                20932 => codepage = "EUC-JP",
+                20936 => codepage = "x-cp20936",
+                20949 => codepage = "x-cp20949",
+                21025 => codepage = "cp1025",
+                21866 => codepage = "koi8-u",
+                28591 => codepage = "iso-8859-1",
+                28592 => codepage = "iso-8859-2",
+                28593 => codepage = "iso-8859-3",
+                28594 => codepage = "iso-8859-4",
+                28595 => codepage = "iso-8859-5",
+                28596 => codepage = "iso-8859-6",
+                28597 => codepage = "iso-8859-7",
+                28598 => codepage = "iso-8859-8",
+                28599 => codepage = "iso-8859-9",
+                28603 => codepage = "iso-8859-13",
+                28605 => codepage = "iso-8859-15",
+                29001 => codepage = "x-Europa",
+                38598 => codepage = "iso-8859-8-i",
+                50220 => codepage = "iso-2022-jp",
+                50221 => codepage = "csISO2022JP",
+                50222 => codepage = "iso-2022-jp",
+                50225 => codepage = "iso-2022-kr",
+                50227 => codepage = "x-cp50227",
+                50229 => codepage = "",
+                50930 => codepage = "",
+                50931 => codepage = "",
+                50933 => codepage = "",
+                50935 => codepage = "",
+                50936 => codepage = "",
+                50937 => codepage = "",
+                50939 => codepage = "",
+                51932 => codepage = "euc-jp",
+                51936 => codepage = "EUC-CN",
+                51949 => codepage = "euc-kr",
+                51950 => codepage = "",
+                52936 => codepage = "hz-gb-2312",
+                54936 => codepage = "GB18030",
+                57002 => codepage = "x-iscii-de",
+                57003 => codepage = "x-iscii-be",
+                57004 => codepage = "x-iscii-ta",
+                57005 => codepage = "x-iscii-te",
+                57006 => codepage = "x-iscii-as",
+                57007 => codepage = "x-iscii-or",
+                57008 => codepage = "x-iscii-ka",
+                57009 => codepage = "x-iscii-ma",
+                57010 => codepage = "x-iscii-gu",
+                57011 => codepage = "x-iscii-pa",
+                65000 => codepage = "utf-7",
+                65001 => codepage = "utf-8",
+                _ => codepage = "Unknown",
+            }
+
             let data = RessourceAdress {
                 size: data_entry.size,
-                address: data_entry.data_rva-virtual_address+ptr_raw_data
+                address: data_entry.data_rva - virtual_address + ptr_raw_data,
+                codepage: codepage,
             };
+
             rsrc_adresses.adresses.push(data);
         }
 
@@ -473,18 +669,184 @@ fn find_rsrc_data_adresses(rsrc_adresses: &mut RessourceAdresses ,mut offset: us
 
         if is_a_subdirectory(&current_id_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_id_entry.data_entry_offset);
-            find_rsrc_data_adresses(rsrc_adresses, le_to_usize(offset), bytes, virtual_size, ptr_raw_data, virtual_address);
+            find_rsrc_data_adresses(
+                rsrc_adresses,
+                le_to_usize(offset),
+                bytes,
+                virtual_size,
+                ptr_raw_data,
+                virtual_address,
+            );
         } else {
-           let data_entry = RessourceDataEntry{
+            let data_entry = RessourceDataEntry {
                 data_rva: le_to_usize(&bytes[offset + 8..offset + 12]),
                 size: le_to_usize(&bytes[offset + 12..offset + 16]),
                 codepage: &bytes[offset + 16..offset + 20],
-                reserved: &bytes[offset + 20..offset + 24]
+                reserved: &bytes[offset + 20..offset + 24],
             };
+            let codepage: &str;
+
+            match le_to_u16(data_entry.codepage) {
+                37 => codepage = "IBM037",
+                437 => codepage = "IBM437",
+                500 => codepage = "IBM500",
+                708 => codepage = "ASMO-708",
+                709 => codepage = "",
+                710 => codepage = "",
+                720 => codepage = "DOS-720",
+                737 => codepage = "ibm737",
+                775 => codepage = "ibm775",
+                850 => codepage = "ibm850",
+                852 => codepage = "ibm852",
+                855 => codepage = "IBM855",
+                857 => codepage = "ibm857",
+                858 => codepage = "IBM00858",
+                860 => codepage = "IBM860",
+                861 => codepage = "ibm861",
+                862 => codepage = "DOS-862",
+                863 => codepage = "IBM863",
+                864 => codepage = "IBM864",
+                865 => codepage = "IBM865",
+                866 => codepage = "cp866",
+                869 => codepage = "ibm869",
+                870 => codepage = "IBM870",
+                874 => codepage = "windows-874",
+                875 => codepage = "cp875",
+                932 => codepage = "shift_jis",
+                936 => codepage = "gb2312",
+                949 => codepage = "ks_c_5601-1987",
+                950 => codepage = "big5",
+                1026 => codepage = "IBM1026",
+                1047 => codepage = "IBM01047",
+                1140 => codepage = "IBM01140",
+                1141 => codepage = "IBM01141",
+                1142 => codepage = "IBM01142",
+                1143 => codepage = "IBM01143",
+                1144 => codepage = "IBM01144",
+                1145 => codepage = "IBM01145",
+                1146 => codepage = "IBM01146",
+                1147 => codepage = "IBM01147",
+                1148 => codepage = "IBM01148",
+                1149 => codepage = "IBM01149",
+                1200 => codepage = "utf-16",
+                1201 => codepage = "unicodeFFFE",
+                1250 => codepage = "windows-1250",
+                1251 => codepage = "windows-1251",
+                1252 => codepage = "windows-1252",
+                1253 => codepage = "windows-1253",
+                1254 => codepage = "windows-1254",
+                1255 => codepage = "windows-1255",
+                1256 => codepage = "windows-1256",
+                1257 => codepage = "windows-1257",
+                1258 => codepage = "windows-1258",
+                1361 => codepage = "Johab",
+                10000 => codepage = "macintosh",
+                10001 => codepage = "x-mac-japanese",
+                10002 => codepage = "x-mac-chinesetrad",
+                10003 => codepage = "x-mac-korean",
+                10004 => codepage = "x-mac-arabic",
+                10005 => codepage = "x-mac-hebrew",
+                10006 => codepage = "x-mac-greek",
+                10007 => codepage = "x-mac-cyrillic",
+                10008 => codepage = "x-mac-chinesesimp",
+                10010 => codepage = "x-mac-romanian",
+                10017 => codepage = "x-mac-ukrainian",
+                10021 => codepage = "x-mac-thai",
+                10029 => codepage = "x-mac-ce",
+                10079 => codepage = "x-mac-icelandic",
+                10081 => codepage = "x-mac-turkish",
+                10082 => codepage = "x-mac-croatian",
+                12000 => codepage = "utf-32",
+                12001 => codepage = "utf-32BE",
+                20000 => codepage = "x-Chinese_CNS",
+                20001 => codepage = "x-cp20001",
+                20002 => codepage = "x_Chinese-Eten",
+                20003 => codepage = "x-cp20003",
+                20004 => codepage = "x-cp20004",
+                20005 => codepage = "x-cp20005",
+                20105 => codepage = "x-IA5",
+                20106 => codepage = "x-IA5-German",
+                20107 => codepage = "x-IA5-Swedish",
+                20108 => codepage = "x-IA5-Norwegian",
+                20127 => codepage = "us-ascii",
+                20261 => codepage = "x-cp20261",
+                20269 => codepage = "x-cp20269",
+                20273 => codepage = "IBM273",
+                20277 => codepage = "IBM277",
+                20278 => codepage = "IBM278",
+                20280 => codepage = "IBM280",
+                20284 => codepage = "IBM284",
+                20285 => codepage = "IBM285",
+                20290 => codepage = "IBM290",
+                20297 => codepage = "IBM297",
+                20420 => codepage = "IBM420",
+                20423 => codepage = "IBM423",
+                20424 => codepage = "IBM424",
+                20833 => codepage = "x-EBCDIC-KoreanExtended",
+                20838 => codepage = "IBM-Thai",
+                20866 => codepage = "koi8-r",
+                20871 => codepage = "IBM871",
+                20880 => codepage = "IBM880",
+                20905 => codepage = "IBM905",
+                20924 => codepage = "IBM00924",
+                20932 => codepage = "EUC-JP",
+                20936 => codepage = "x-cp20936",
+                20949 => codepage = "x-cp20949",
+                21025 => codepage = "cp1025",
+                21866 => codepage = "koi8-u",
+                28591 => codepage = "iso-8859-1",
+                28592 => codepage = "iso-8859-2",
+                28593 => codepage = "iso-8859-3",
+                28594 => codepage = "iso-8859-4",
+                28595 => codepage = "iso-8859-5",
+                28596 => codepage = "iso-8859-6",
+                28597 => codepage = "iso-8859-7",
+                28598 => codepage = "iso-8859-8",
+                28599 => codepage = "iso-8859-9",
+                28603 => codepage = "iso-8859-13",
+                28605 => codepage = "iso-8859-15",
+                29001 => codepage = "x-Europa",
+                38598 => codepage = "iso-8859-8-i",
+                50220 => codepage = "iso-2022-jp",
+                50221 => codepage = "csISO2022JP",
+                50222 => codepage = "iso-2022-jp",
+                50225 => codepage = "iso-2022-kr",
+                50227 => codepage = "x-cp50227",
+                50229 => codepage = "",
+                50930 => codepage = "",
+                50931 => codepage = "",
+                50933 => codepage = "",
+                50935 => codepage = "",
+                50936 => codepage = "",
+                50937 => codepage = "",
+                50939 => codepage = "",
+                51932 => codepage = "euc-jp",
+                51936 => codepage = "EUC-CN",
+                51949 => codepage = "euc-kr",
+                51950 => codepage = "",
+                52936 => codepage = "hz-gb-2312",
+                54936 => codepage = "GB18030",
+                57002 => codepage = "x-iscii-de",
+                57003 => codepage = "x-iscii-be",
+                57004 => codepage = "x-iscii-ta",
+                57005 => codepage = "x-iscii-te",
+                57006 => codepage = "x-iscii-as",
+                57007 => codepage = "x-iscii-or",
+                57008 => codepage = "x-iscii-ka",
+                57009 => codepage = "x-iscii-ma",
+                57010 => codepage = "x-iscii-gu",
+                57011 => codepage = "x-iscii-pa",
+                65000 => codepage = "utf-7",
+                65001 => codepage = "utf-8",
+                _ => codepage = "Unknown",
+            }
+
             let data = RessourceAdress {
                 size: data_entry.size,
-                address: data_entry.data_rva-virtual_address+ptr_raw_data
+                address: data_entry.data_rva - virtual_address + ptr_raw_data,
+                codepage: codepage,
             };
+
             rsrc_adresses.adresses.push(data);
         }
 
@@ -504,12 +866,14 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
 
             let opt_header = extract_opt_header(bytes, dos_header.pe_offset);
 
-            let symbol_table = extract_symbol_table(bytes, dos_header.pe_offset, coff_header.clone());
-            
+            let symbol_table =
+                extract_symbol_table(bytes, dos_header.pe_offset, coff_header.clone());
+
             let string_table = extract_string_table(bytes, coff_header.clone());
 
-            let mut section_table = extract_section_table(bytes, dos_header.pe_offset, coff_header.clone());
-            
+            let mut section_table =
+                extract_section_table(bytes, dos_header.pe_offset, coff_header.clone());
+
             let mut sections_data = SectionsData {
                 sections: HashMap::new(),
             };
@@ -519,13 +883,12 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(bytes, &mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-              //  println!("Extracted .text section data: {:?}", text_data.extracted_code);
-            } 
-        
-            if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
-              //  println!("Extracted .rsrc section data: {:?}", rsrc_data);
+                //  println!("Extracted .text section data: {:?}", text_data.extracted_code);
             }
 
+            if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
+                //  println!("Extracted .rsrc section data: {:?}", rsrc_data);
+            }
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
