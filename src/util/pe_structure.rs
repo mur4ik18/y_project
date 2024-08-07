@@ -196,13 +196,14 @@ pub struct RessourceDataEntry<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct RessourceAdress {
+pub struct RessourceAdress <'a> {
     pub size: usize,
-    pub address: usize
+    pub address: usize,
+    pub codepage: &'a str
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct RessourceAdresses {
-    pub adresses: Vec<RessourceAdress>,
+pub struct RessourceAdresses<'a> {
+    pub adresses: Vec<RessourceAdress<'a>>,
 }
