@@ -127,3 +127,4 @@ fn main() {
     let app = RelmApp::new("relm4.example.simple");
     app.run::<App>(());
 }
+
