@@ -154,21 +154,6 @@ pub struct Section<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct COFFStringTable<'a> {
-    pub strings: Vec<COFFString<'a>>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct COFFString<'a> {
-    pub length: usize,
-    pub structure_length: usize,
-    pub data_type: &'a [u8],
-    pub string: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
 pub struct RessourceDir<'a> {
     pub characteristics: &'a [u8],
     pub time_date_stamp: &'a [u8],
