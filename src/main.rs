@@ -368,7 +368,7 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
 
 enum SectionData<'a> {
     Text(TextData<'a>),
-    Rsrc(RessourceDir<'a>),
+    Rsrc(RsrcDataList<'a>),
 }
 
 #[derive(Debug)]
@@ -376,8 +376,13 @@ struct TextData<'a> {
     extracted_code: &'a [u8],
 }
 
+struct RsrcDataList<'a> {
+   data: Vec<RsrcData<'a>>,
+}
+
 struct RsrcData<'a> {
-    extracted_data: &'a [u8],
+    extracted_raw: &'a[u8],
+    codepage: &'a str
 }
 
 struct SectionsData<'a> {
@@ -385,7 +390,7 @@ struct SectionsData<'a> {
 }
 
 fn extract_section_datas<'a>(
-    bytes: &[u8],
+    bytes: &'a[u8],
     section_table: &'a mut SectionTable,
     sections_data: &mut SectionsData<'a>,
 ) {
@@ -405,20 +410,13 @@ fn extract_section_datas<'a>(
                 let virtual_size = section.virtual_size;
                 let ptr_to_raw_data = section.ptr_to_raw_data;
                 let virtual_address = section.virtual_address;
-                sections_data.sections.insert(
-                    section.name.clone(),
-                    SectionData::Rsrc(RessourceDir {
-                        characteristics: &section_data[0..4],
-                        time_date_stamp: &section_data[4..8],
-                        major_version: &section_data[8..10],
-                        minor_version: &section_data[10..12],
-                        name_entries_number: le_to_usize(&section_data[12..14]),
-                        id_entries_number: le_to_usize(&section_data[14..16]),
-                    }),
-                );
                 let mut rsrc_data_adresses = RessourceAdresses {
                     adresses: Vec::new(),
                 };
+                let mut rsrc_data_list = RsrcDataList {
+                    data: Vec::new(),
+                };
+
                 find_rsrc_data_adresses(
                     &mut rsrc_data_adresses,
                     0,
@@ -427,12 +425,22 @@ fn extract_section_datas<'a>(
                     ptr_to_raw_data,
                     virtual_address,
                 );
+                println!(
+                    "*[+] Found {} resource entries in .rsrc section. ", rsrc_data_adresses.adresses.len(),
+                );
                 for adresses in rsrc_data_adresses.adresses {
-                    println!(
-                        "*[+] Found data -> {:?}",
-                        &bytes[adresses.address..adresses.address + adresses.size]
-                    );
+                    let data = RsrcData {
+                        extracted_raw: &bytes[adresses.address..adresses.address + adresses.size],
+                        codepage: adresses.codepage
+                    };
+                    rsrc_data_list.data.push(data);
                 }
+
+                sections_data.sections.insert(
+                    section.name.clone(),
+                    SectionData::Rsrc(rsrc_data_list),
+                );
+
             }
             _ => {
                 // println!("*[-] Unknown section -> {}", section.name);
