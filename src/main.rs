@@ -12,18 +12,19 @@ use util::pe_structure::RessourceDataEntry;
 use util::pe_structure::RessourceDirEntries;
 
 use crate::util::pe_structure::COFFHeader;
-use crate::util::pe_structure::COFFString;
-use crate::util::pe_structure::COFFStringTable;
 use crate::util::pe_structure::DOSHeader;
 use crate::util::pe_structure::DataDirectoryEntry;
 use crate::util::pe_structure::OptionalHeader;
-use crate::util::pe_structure::PEFile;
 use crate::util::pe_structure::RessourceDir;
 use crate::util::pe_structure::Section;
 use crate::util::pe_structure::SectionTable;
 use crate::util::pe_structure::StringTable;
 use crate::util::pe_structure::Symbol;
 use crate::util::pe_structure::SymbolTable;
+use crate::util::pe_structure::SectionData;
+use crate::util::pe_structure::TextData;
+use crate::util::pe_structure::RsrcDataList;
+use crate::util::pe_structure::RsrcData;
 
 use crate::util::signature::SIGNATURES;
 
@@ -366,25 +367,6 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
     }
 }
 
-enum SectionData<'a> {
-    Text(TextData<'a>),
-    Rsrc(RsrcDataList<'a>),
-}
-
-#[derive(Debug)]
-struct TextData<'a> {
-    extracted_code: &'a [u8],
-}
-
-struct RsrcDataList<'a> {
-   data: Vec<RsrcData<'a>>,
-}
-
-struct RsrcData<'a> {
-    extracted_raw: &'a[u8],
-    codepage: &'a str
-}
-
 struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
 }
@@ -425,9 +407,11 @@ fn extract_section_datas<'a>(
                     ptr_to_raw_data,
                     virtual_address,
                 );
+
                 println!(
                     "*[+] Found {} resource entries in .rsrc section. ", rsrc_data_adresses.adresses.len(),
                 );
+
                 for adresses in rsrc_data_adresses.adresses {
                     let data = RsrcData {
                         extracted_raw: &bytes[adresses.address..adresses.address + adresses.size],
@@ -478,7 +462,7 @@ fn find_rsrc_data_adresses(
     offset += 16;
 
     for _ in 0..current_dir.name_entries_number {
-        let mut current_name_entry = RessourceDirEntries {
+        let current_name_entry = RessourceDirEntries {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
@@ -670,7 +654,7 @@ fn find_rsrc_data_adresses(
     }
 
     for _ in 0..current_dir.id_entries_number {
-        let mut current_id_entry = RessourceDirEntries {
+        let current_id_entry = RessourceDirEntries {
             name_offset: le_to_usize(&bytes[offset..offset + 4]),
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
@@ -891,11 +875,11 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(bytes, &mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-                //  println!("Extracted .text section data: {:?}", text_data.extracted_code);
+                println!("Extracted .text section data: {:?}", text_data.extracted_code);
             }
 
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
-                //  println!("Extracted .rsrc section data: {:?}", rsrc_data);
+                println!("Extracted .rsrc section data: {:?}", rsrc_data);
             }
         }
         "Executable and Linkable Format (ELF)" => {

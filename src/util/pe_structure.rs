@@ -192,3 +192,26 @@ pub struct RessourceAdress <'a> {
 pub struct RessourceAdresses<'a> {
     pub adresses: Vec<RessourceAdress<'a>>,
 }
+
+
+pub enum SectionData<'a> {
+    Text(TextData<'a>),
+    Rsrc(RsrcDataList<'a>),
+}
+
+#[derive(Debug)]
+pub struct TextData<'a> {
+    pub extracted_code: &'a [u8],
+}
+
+#[derive(Debug)]
+pub struct RsrcDataList<'a> {
+    pub data: Vec<RsrcData<'a>>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RsrcData<'a> {
+    pub extracted_raw: &'a[u8],
+    pub codepage: &'a str
+}
