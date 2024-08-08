@@ -62,14 +62,9 @@ impl SimpleComponent for App {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
                     gtk::Label::new(Some("Memory view")),
-                    gtk::ScrolledWindow {
-                        set_min_content_height: 100,
-                        set_max_content_height: 200, 
-                        // set_vexpand: true, 
-                        set_min_content_width: 400,
-                        #[local_ref]
-                        line_list -> gtk::Box{},
-                    },
+                    #[local_ref]
+                    line_list -> gtk::ScrolledWindow,
+                
                 }
             }
         }
@@ -126,6 +121,7 @@ impl SimpleComponent for App {
         }
     }
 }
+
 
 fn main() {
     let app = RelmApp::new("relm4.example.simple");
