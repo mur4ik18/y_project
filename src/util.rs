@@ -3,6 +3,7 @@ pub mod jvm_structure;
 pub mod macho_structure;
 pub mod pe_structure;
 pub mod signature;
+use std::convert::TryInto;
 
 pub fn match_codepage<'a>(u16_codepage: u16) -> &'a str {
     let codepage: &str;
@@ -161,4 +162,22 @@ pub fn match_codepage<'a>(u16_codepage: u16) -> &'a str {
         _ => codepage = "Unknown",
     }
     codepage
+}
+
+pub fn le_to_u32(bytes: &[u8]) -> u32 {
+    let array: [u8; 4] = bytes[0..4].try_into().expect("wrong size length");
+    u32::from_le_bytes(array)
+}
+
+pub fn le_to_u16(bytes: &[u8]) -> u16 {
+    let array: [u8; 2] = bytes[0..2].try_into().expect("wrong size length");
+    u16::from_le_bytes(array)
+}
+
+pub fn le_to_usize(bytes: &[u8]) -> usize {
+    let mut array = [0u8; std::mem::size_of::<usize>()];
+    for (i, &byte) in bytes.iter().enumerate() {
+        array[i] = byte;
+    }
+    usize::from_le_bytes(array)
 }

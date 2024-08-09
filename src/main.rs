@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::env;
 use std::fs;
 pub mod util;
@@ -34,6 +33,10 @@ use crate::util::elf_structure::FileInfoELF;
 
 use crate::util::macho_structure::MachOHeader;
 use crate::util::match_codepage;
+use crate::util::le_to_u16;
+use crate::util::le_to_u32;
+use crate::util::le_to_usize;
+
 
 // context
 struct Ctx {
@@ -44,24 +47,6 @@ struct Ctx {
 /****************************************************************************************/
 /******************************** Code Functions ****************************************/
 /****************************************************************************************/
-
-fn le_to_u32(bytes: &[u8]) -> u32 {
-    let array: [u8; 4] = bytes[0..4].try_into().expect("wrong size length");
-    u32::from_le_bytes(array)
-}
-
-fn le_to_u16(bytes: &[u8]) -> u16 {
-    let array: [u8; 2] = bytes[0..2].try_into().expect("wrong size length");
-    u16::from_le_bytes(array)
-}
-
-fn le_to_usize(bytes: &[u8]) -> usize {
-    let mut array = [0u8; std::mem::size_of::<usize>()];
-    for (i, &byte) in bytes.iter().enumerate() {
-        array[i] = byte;
-    }
-    usize::from_le_bytes(array)
-}
 
 fn reverse_bytes<T: Clone>(slice: &[T]) -> Vec<T> {
     slice.iter().cloned().rev().collect()
@@ -489,7 +474,7 @@ fn find_rsrc_data_adresses(
             };
             let codepage: &str;
             
-            codepage = util::match_codepage(le_to_u16(data_entry.codepage));
+            codepage = match_codepage(le_to_u16(data_entry.codepage));
 
             let data = RessourceAdress {
                 size: data_entry.size,
@@ -527,7 +512,8 @@ fn find_rsrc_data_adresses(
                 reserved: &bytes[offset + 20..offset + 24],
             };
             let codepage: &str;
-            codepage = util::match_codepage(le_to_u16(data_entry.codepage));
+            
+            codepage = match_codepage(le_to_u16(data_entry.codepage));
 
             let data = RessourceAdress {
                 size: data_entry.size,
