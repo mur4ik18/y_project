@@ -5,9 +5,9 @@ TypedListView}, };
 /// MVLine is the line that we draw
 #[derive(Debug)]
 struct MVLine {
-    /// Address is velue like 000FF0
+    /// Address is a value like 000FF0
     address: String,
-    /// value is Vec of Strings with size < 17
+    /// value is a Vec of Strings with size < 17
     value:Vec<String>,
 }
 /// This impl is used for RealmListItem, if you wanna add more params
@@ -190,14 +190,15 @@ impl SimpleComponent for MemoryView {
         gtk::ScrolledWindow {
             set_min_content_height: 300,
             set_max_content_height: 400, 
-            set_min_content_width: 420,
+            set_min_content_width: 430,
             set_overlay_scrolling: false,
             set_overlay_scrolling: false,
             set_has_frame: true,
             #[local_ref]
             linebox -> gtk::ListView {
                 set_orientation: gtk::Orientation::Vertical,
-                set_enable_rubberband: false,
+                set_vscroll_policy: gtk::ScrollablePolicy::Minimum,
+                set_enable_rubberband: true,
                 set_show_separators: true,
                 set_valign: gtk::Align::Center,
             },
