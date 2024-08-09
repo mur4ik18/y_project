@@ -21,6 +21,10 @@ address. Having in itself two elements:
 
 This element changes the memory view component scroll position.
 
+If the user typed an incorrect address, the app needs to be able to show only
+correct given addresses. If the user typed an incorrect address, the app can
+show by highliting the input field - the value incorrectness.
+
 *** Memory view
 The next component is a field who shows memory address who starts
 always by first byte in hex decade (modulo of 16). In left party of
