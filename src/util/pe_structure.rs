@@ -197,6 +197,18 @@ pub struct RessourceAdresses<'a> {
 pub enum SectionData<'a> {
     Text(TextData<'a>),
     Rsrc(RsrcDataList<'a>),
+    Unknown(UnknownSections<'a>)
+}
+
+#[derive(Debug)]
+pub struct UnknownSections<'a> {
+    pub sections : Vec<UnknownSection<'a>>,
+}
+
+#[derive(Debug)]
+pub struct UnknownSection<'a> {
+    pub section_name: String,
+    pub extracted_raw: &'a[u8]
 }
 
 #[derive(Debug)]
