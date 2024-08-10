@@ -9,6 +9,8 @@ use util::pe_structure::RessourceAdress;
 use util::pe_structure::RessourceAdresses;
 use util::pe_structure::RessourceDataEntry;
 use util::pe_structure::RessourceDirEntries;
+use util::pe_structure::UnknownSection;
+use util::pe_structure::UnknownSections;
 
 use crate::util::pe_structure::COFFHeader;
 use crate::util::pe_structure::DOSHeader;
@@ -362,6 +364,9 @@ fn extract_section_datas<'a>(
     section_table: &'a mut SectionTable,
     sections_data: &mut SectionsData<'a>,
 ) {
+    let mut unknown_sections = UnknownSections {
+        sections: Vec::new()
+    };
     println!("*[+] Extracting data from sections...");
     for section in section_table.sections.iter_mut() {
         match section.name.as_str() {
@@ -413,12 +418,22 @@ fn extract_section_datas<'a>(
 
             }
 
-
             _ => {
-                // println!("*[-] Unknown section -> {}", section.name);
+                let unknown_section = UnknownSection {
+                    section_name: section.name.to_owned(),
+                    extracted_raw: section.raw_data,
+                };
+                unknown_sections.sections.push(unknown_section);
             }
         }
     }
+    sections_data.sections.insert(
+        "Unknown".to_string(),
+        SectionData::Unknown(UnknownSections {
+            sections: unknown_sections.sections
+        }),
+    );
+
 }
 
 fn is_a_subdirectory(value: &[u8]) -> bool {
@@ -557,11 +572,15 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             extract_section_datas(bytes, &mut section_table, &mut sections_data);
 
             if let Some(SectionData::Text(text_data)) = sections_data.sections.get(".text") {
-                println!("Extracted .text section data: {:?}", text_data.extracted_code);
+                // println!("Extracted .text section data: {:?}", text_data.extracted_code);
             }
 
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
                 println!("Extracted .rsrc section data: {:?}", rsrc_data);
+            }
+
+            if let Some(SectionData::Unknown(unknown_sections)) = sections_data.sections.get("Unknown") {
+                println!("Unrecognized section data: {:?}", unknown_sections);
             }
             
             // println!("{:?}", section_table);
@@ -651,7 +670,7 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
     }
 }
 
-// ===========================================================================
+// =========================================================================== 
 //                                    Graphisme
 // ===========================================================================
 
