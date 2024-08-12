@@ -1,6 +1,8 @@
 use y_project;
 pub mod memory_view;
+pub mod goto;
 use memory_view::{MemoryView, MViewOutput, MViewMsg};
+use goto::{GoTo, GToutput};
 
 use relm4::{
     gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
@@ -21,11 +23,13 @@ struct App {
     //bin_view: Component<gtk::TextView>,
     
     memory_view_component: Controller<MemoryView>,
+    goto: Controller<GoTo>,
 }
 
 #[derive(Debug)]
 enum Msg {
     // Message for file opening
+    GTMemoryView(u64),
     None,
     Open(PathBuf),
 }
@@ -61,6 +65,9 @@ impl SimpleComponent for App {
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 5,
+                    gtk::Label::new(Some("Go-To")),
+                    #[local_ref]
+                    goto -> gtk::Box,
                     gtk::Label::new(Some("Memory view")),
                     #[local_ref]
                     line_list -> gtk::ScrolledWindow,
@@ -77,15 +84,25 @@ impl SimpleComponent for App {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         // Window builder for file opening
+
+
+
+
+
         let open_button = OpenButton::builder()
-            .launch(OpenButtonSettings {
-                dialog_settings: OpenDialogSettings::default(),
-                text: "Open file",
-                recently_opened_files: Some(".recent_files"),
-                max_recent_files: 10,
-            })
+            .launch(OpenButtonSettings { dialog_settings: OpenDialogSettings::default(), text: "Open file", recently_opened_files: Some(".recent_files"), max_recent_files: 10, })
             // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
+
+
+        let goto = GoTo::builder()
+            .launch(())
+            .forward(sender.input_sender(),|msg| match msg {
+                GToutput::GT(u64) => Msg::GTMemoryView(u64),
+            });
+
+
+
         let memview = MemoryView::builder()
             .launch(0)
             .forward(sender.input_sender(), |msg| match msg {
@@ -100,8 +117,9 @@ impl SimpleComponent for App {
             open_button: open_button,
             bindata: bindata,
             memory_view_component: memview,
+            goto: goto,
         };
-
+        let goto = model.goto.widget();
         let line_list = model.memory_view_component.widget();
         let widgets = view_output!();
 
@@ -117,6 +135,7 @@ impl SimpleComponent for App {
                 self.memory_view_component
                     .emit(MViewMsg::Draw(self.bindata.clone()));
             }
+            Msg::GTMemoryView(u64) => {}
             Msg::None => {}
         }
     }
