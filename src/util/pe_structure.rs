@@ -227,3 +227,14 @@ pub struct RsrcData<'a> {
     pub extracted_raw: &'a[u8],
     pub codepage: &'a str
 }
+
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct ImportDescriptor{
+    pub original_first_thunk: usize,
+    pub time_date_stamp: usize,
+    pub forwarder_chain: usize,
+    pub name_rva: usize,
+    pub first_thunk: usize
+}
