@@ -26,6 +26,7 @@ use crate::util::pe_structure::SectionData;
 use crate::util::pe_structure::TextData;
 use crate::util::pe_structure::RsrcDataList;
 use crate::util::pe_structure::RsrcData;
+use crate::util::pe_structure::ImportDescriptor;
 
 use crate::util::signature::SIGNATURES;
 
@@ -379,10 +380,6 @@ fn extract_section_datas<'a>(
                 );
             }
             ".rsrc" => {
-                let section_data = section.raw_data;
-                let virtual_size = section.virtual_size;
-                let ptr_to_raw_data = section.ptr_to_raw_data;
-                let virtual_address = section.virtual_address;
                 let mut rsrc_data_adresses = RessourceAdresses {
                     adresses: Vec::new(),
                 };
@@ -393,10 +390,10 @@ fn extract_section_datas<'a>(
                 find_rsrc_data_adresses(
                     &mut rsrc_data_adresses,
                     0,
-                    section_data,
-                    virtual_size,
-                    ptr_to_raw_data,
-                    virtual_address,
+                    section.raw_data,
+                    section.virtual_size,
+                    section.ptr_to_raw_data,
+                    section.virtual_address,
                 );
 
                 println!(
@@ -417,6 +414,31 @@ fn extract_section_datas<'a>(
                 );
 
             }
+
+            ".idata" => {
+                let mut offset: usize = 0;
+
+                loop {
+                    let import_descriptor = ImportDescriptor{
+                        original_first_thunk: le_to_usize(&section.raw_data[offset + 0..offset + 4]),
+                        time_date_stamp: le_to_usize(&section.raw_data[offset + 4..offset + 8]),
+                        forwarder_chain: le_to_usize(&section.raw_data[offset + 8..offset + 12]),
+                        name_rva: le_to_usize(&section.raw_data[offset + 12..offset + 16]),
+                        first_thunk: le_to_usize(&section.raw_data[offset + 16..offset + 20]),
+                    };
+                    offset+=20;
+
+                    println!("{:?}, {}", import_descriptor, offset);
+
+                    if import_descriptor.first_thunk + import_descriptor.time_date_stamp
+                       + import_descriptor.forwarder_chain + import_descriptor.name_rva
+                       + import_descriptor.first_thunk == 0
+                    {
+                        break;
+                    }
+
+                }
+            }   
 
             _ => {
                 let unknown_section = UnknownSection {
@@ -576,15 +598,16 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
             }
 
             if let Some(SectionData::Rsrc(rsrc_data)) = sections_data.sections.get(".rsrc") {
-                println!("Extracted .rsrc section data: {:?}", rsrc_data);
+                // println!("Extracted .rsrc section data: {:?}", rsrc_data);
             }
 
             if let Some(SectionData::Unknown(unknown_sections)) = sections_data.sections.get("Unknown") {
-                println!("Unrecognized section data: {:?}", unknown_sections);
+                // println!("Unrecognized section data: {:?}", unknown_sections);
             }
             
-            // println!("{:?}", section_table);
-
+            // println!("{:?}", &bytes[18804..18820]);
+            // println!("{:?}", &bytes[17728..17900]);
+            // println!("{:?}", &bytes[17488..17700]);
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
