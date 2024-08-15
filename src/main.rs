@@ -286,6 +286,18 @@ fn read_file(file_path: &String) -> Vec<u8> {
     bytes
 }
 
+fn get_dll_name<'a>(bytes: &'a[u8], offset: usize) -> String {
+    let mut dll_name: String = Default::default();
+    let sliced_bytes = &bytes[offset..];
+    for &byte in sliced_bytes.iter() {
+        if byte==0x00{
+            break;
+        }
+        dll_name.push(byte as char);
+    }
+    dll_name
+}
+
 fn help() {
     println!(
         "Usage:
@@ -417,7 +429,7 @@ fn extract_section_datas<'a>(
 
             ".idata" => {
                 let mut offset: usize = 0;
-
+                println!("{:?}",section);
                 loop {
                     let import_descriptor = ImportDescriptor{
                         original_first_thunk: le_to_usize(&section.raw_data[offset + 0..offset + 4]),
@@ -426,9 +438,8 @@ fn extract_section_datas<'a>(
                         name_rva: le_to_usize(&section.raw_data[offset + 12..offset + 16]),
                         first_thunk: le_to_usize(&section.raw_data[offset + 16..offset + 20]),
                     };
-                    offset+=20;
 
-                    println!("{:?}, {}", import_descriptor, offset);
+                    offset+=20;
 
                     if import_descriptor.first_thunk + import_descriptor.time_date_stamp
                        + import_descriptor.forwarder_chain + import_descriptor.name_rva
@@ -437,6 +448,10 @@ fn extract_section_datas<'a>(
                         break;
                     }
 
+                    let stdd: String;
+                    stdd = get_dll_name(bytes, (import_descriptor.name_rva+section.ptr_to_raw_data)-section.virtual_address);
+                    println!("{}", stdd);
+                    println!("{:?}, {:?}, {:?}", import_descriptor.name_rva,section.ptr_to_raw_data,section.virtual_address);
                 }
             }   
 
