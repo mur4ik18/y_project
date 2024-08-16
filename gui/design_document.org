@@ -8,9 +8,24 @@ in top of this window (...)
 After, there is a component that represent a row for storing 2
 columns.
 
-** first column
+* Settings
+By clicking on button settings the app should open new window with
+settings. Settings can give possibility to change:
+- Font size
+- Color theme
+etc.
 
-** second column
+
+
+** The First column
+*** App structure
+
+*** Output
+In this component information about header should be present like a
+list of information with good readability. The information should be
+present in order where firstly is information more important.
+
+** The Second column
 The lable of this section is "Memory View".
 
 *** Go-to address
