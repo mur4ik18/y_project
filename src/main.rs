@@ -27,6 +27,8 @@ use crate::util::pe_structure::TextData;
 use crate::util::pe_structure::RsrcDataList;
 use crate::util::pe_structure::RsrcData;
 use crate::util::pe_structure::ImportDescriptor;
+use crate::util::pe_structure::ImportLibraries;
+use crate::util::pe_structure::ImportLibrary;
 
 use crate::util::signature::SIGNATURES;
 
@@ -373,12 +375,11 @@ fn get_dll_name<'a>(bytes: &'a[u8], offset: usize) -> String {
 }
 
 
-fn get_associated_fns<'a>(bytes: &'a[u8], mut offset: usize, virtual_address: usize, ptr_to_raw_data: usize) {
+fn get_associated_fns<'a>(bytes: &'a[u8], mut offset: usize, virtual_address: usize, ptr_to_raw_data: usize) -> Vec<String> {
     let mut fn_list: Vec<String> = Vec::new();
-    
+
     loop {
         let current_entry = &bytes[offset..offset+4];
-        println!("Current entry -> {:?}", current_entry);
 
         if le_to_usize(current_entry) == 0 {
             break;
@@ -386,14 +387,15 @@ fn get_associated_fns<'a>(bytes: &'a[u8], mut offset: usize, virtual_address: us
 
         //Check whether the entry is a cardinal or a name entry
         if le_msb_is_1(current_entry){
-            println!("Ordinal found -> {:?}", msb_to_0(current_entry));
+            let ordinal_value = le_to_usize(&msb_to_0(current_entry));
+            fn_list.push(format!("Ordinal -> {}", ordinal_value));
         } else {
-            println!("{:?}",get_dll_name(bytes, le_to_usize(current_entry)-virtual_address+ptr_to_raw_data+2));
-
+            fn_list.push(get_dll_name(bytes, le_to_usize(current_entry)-virtual_address+ptr_to_raw_data+2));
         }
 
         offset+=4;
     }
+    fn_list
 }
 
 fn extract_section_datas<'a>(
@@ -407,6 +409,7 @@ fn extract_section_datas<'a>(
     println!("*[+] Extracting data from sections...");
     for section in section_table.sections.iter_mut() {
         match section.name.as_str() {
+
             ".text" => {
                 sections_data.sections.insert(
                     section.name.clone(),
@@ -415,6 +418,7 @@ fn extract_section_datas<'a>(
                     }),
                 );
             }
+
             ".rsrc" => {
                 let mut rsrc_data_adresses = RessourceAdresses {
                     adresses: Vec::new(),
@@ -453,7 +457,10 @@ fn extract_section_datas<'a>(
 
             ".idata" => {
                 let mut offset: usize = 0;
-                println!("{:?}",section);
+                let mut libraries = ImportLibraries{
+                    libraries: Vec::new()
+                };
+
                 loop {
                     let import_descriptor = ImportDescriptor{
                         original_first_thunk: le_to_usize(&section.raw_data[offset + 0..offset + 4]),
@@ -472,14 +479,20 @@ fn extract_section_datas<'a>(
                         break;
                     }
 
-                    let stdd: String;
-                    stdd = get_dll_name(bytes, (import_descriptor.name_rva+section.ptr_to_raw_data)-section.virtual_address);
-                    println!("{}", stdd);
-                    println!("Section virtual_address: {}", section.virtual_address);
-                    println!("Section ptr_to_raw_data: {}", section.ptr_to_raw_data);
-                    get_associated_fns(bytes, import_descriptor.original_first_thunk+section.ptr_to_raw_data-section.virtual_address
-                    , section.virtual_address, section.ptr_to_raw_data);
+                    let library = ImportLibrary {
+                        name: get_dll_name(bytes, (import_descriptor.name_rva+section.ptr_to_raw_data)-section.virtual_address),
+                        functions: get_associated_fns(bytes, import_descriptor.original_first_thunk+section.ptr_to_raw_data-section.virtual_address
+                        ,section.virtual_address, section.ptr_to_raw_data)
+                    };
+                    libraries.libraries.push(library);
                 }
+
+                println!("*[+] Found {} libraries in .idata section.", libraries.libraries.len());
+
+                sections_data.sections.insert(
+                    section.name.clone(),
+                    SectionData::IData(libraries),
+                );
             }   
 
             _ => {
@@ -645,13 +658,15 @@ fn get_file_data(file_signature: &str, bytes: &[u8]) {
                 // println!("Extracted .rsrc section data: {:?}", rsrc_data);
             }
 
+            if let Some(SectionData::IData(idata_data)) = sections_data.sections.get(".idata") {
+                // println!("Extracted .idata section data: {:?}", idata_data);
+            }
+
             if let Some(SectionData::Unknown(unknown_sections)) = sections_data.sections.get("Unknown") {
                 // println!("Unrecognized section data: {:?}", unknown_sections);
             }
             
-            // println!("{:?}", &bytes[18804..18820]);
-            // println!("{:?}", &bytes[17728..17900]);
-            // println!("{:?}", &bytes[17488..17700]);
+            
         }
         "Executable and Linkable Format (ELF)" => {
             let file_info_identification: ELFIdentification = ELFIdentification {
