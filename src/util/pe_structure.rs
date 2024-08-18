@@ -197,6 +197,7 @@ pub struct RessourceAdresses<'a> {
 pub enum SectionData<'a> {
     Text(TextData<'a>),
     Rsrc(RsrcDataList<'a>),
+    IData(ImportLibraries),
     Unknown(UnknownSections<'a>)
 }
 
@@ -237,4 +238,16 @@ pub struct ImportDescriptor{
     pub forwarder_chain: usize,
     pub name_rva: usize,
     pub first_thunk: usize
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct ImportLibrary{
+    pub name: String,
+    pub functions: Vec<String>
+}
+
+#[derive(Debug)]
+pub struct ImportLibraries{
+    pub libraries: Vec<ImportLibrary>
 }
