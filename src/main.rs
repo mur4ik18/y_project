@@ -286,18 +286,6 @@ fn read_file(file_path: &String) -> Vec<u8> {
     bytes
 }
 
-fn get_dll_name<'a>(bytes: &'a[u8], offset: usize) -> String {
-    let mut dll_name: String = Default::default();
-    let sliced_bytes = &bytes[offset..];
-    for &byte in sliced_bytes.iter() {
-        if byte==0x00{
-            break;
-        }
-        dll_name.push(byte as char);
-    }
-    dll_name
-}
-
 fn help() {
     println!(
         "Usage:
@@ -370,6 +358,42 @@ fn replace_section_names(string_table: &StringTable, section_table: &mut Section
 
 struct SectionsData<'a> {
     sections: HashMap<String, SectionData<'a>>,
+}
+
+fn get_dll_name<'a>(bytes: &'a[u8], offset: usize) -> String {
+    let mut dll_name: String = Default::default();
+    let sliced_bytes = &bytes[offset..];
+    for &byte in sliced_bytes.iter() {
+        if byte==0x00{
+            break;
+        }
+        dll_name.push(byte as char);
+    }
+    dll_name
+}
+
+
+fn get_associated_fns<'a>(bytes: &'a[u8], mut offset: usize, virtual_address: usize, ptr_to_raw_data: usize) {
+    let mut fn_list: Vec<String> = Vec::new();
+    
+    loop {
+        let current_entry = &bytes[offset..offset+4];
+        println!("Current entry -> {:?}", current_entry);
+
+        if le_to_usize(current_entry) == 0 {
+            break;
+        }
+
+        //Check whether the entry is a cardinal or a name entry
+        if le_msb_is_1(current_entry){
+            println!("Ordinal found -> {:?}", msb_to_0(current_entry));
+        } else {
+            println!("{:?}",get_dll_name(bytes, le_to_usize(current_entry)-virtual_address+ptr_to_raw_data+2));
+
+        }
+
+        offset+=4;
+    }
 }
 
 fn extract_section_datas<'a>(
@@ -451,7 +475,10 @@ fn extract_section_datas<'a>(
                     let stdd: String;
                     stdd = get_dll_name(bytes, (import_descriptor.name_rva+section.ptr_to_raw_data)-section.virtual_address);
                     println!("{}", stdd);
-                    println!("{:?}, {:?}, {:?}", import_descriptor.name_rva,section.ptr_to_raw_data,section.virtual_address);
+                    println!("Section virtual_address: {}", section.virtual_address);
+                    println!("Section ptr_to_raw_data: {}", section.ptr_to_raw_data);
+                    get_associated_fns(bytes, import_descriptor.original_first_thunk+section.ptr_to_raw_data-section.virtual_address
+                    , section.virtual_address, section.ptr_to_raw_data);
                 }
             }   
 
@@ -473,7 +500,7 @@ fn extract_section_datas<'a>(
 
 }
 
-fn is_a_subdirectory(value: &[u8]) -> bool {
+fn le_msb_is_1(value: &[u8]) -> bool {
     value[3] & 0b10000000 != 0
 }
 
@@ -507,7 +534,8 @@ fn find_rsrc_data_adresses(
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
 
-        if is_a_subdirectory(&current_name_entry.data_entry_offset) {
+        //Check whether the current entry is a subdirectory
+        if le_msb_is_1(&current_name_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_name_entry.data_entry_offset);
             find_rsrc_data_adresses(
                 rsrc_adresses,
@@ -546,7 +574,8 @@ fn find_rsrc_data_adresses(
             data_entry_offset: &bytes[offset + 4..offset + 8],
         };
 
-        if is_a_subdirectory(&current_id_entry.data_entry_offset) {
+        //Check whether the current entry is a subdirectory
+        if le_msb_is_1(&current_id_entry.data_entry_offset) {
             let offset: &[u8] = &msb_to_0(&current_id_entry.data_entry_offset);
             find_rsrc_data_adresses(
                 rsrc_adresses,
