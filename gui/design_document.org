@@ -1,13 +1,6 @@
 #+title: Documentation for GUI
 #+author: A. Kotov
 
-* App structure
-There is a window that has two "Open file" and "Save file" buttons
-in top of this window (...)
-
-After, there is a component that represent a row for storing 2
-columns.
-
 * Settings
 By clicking on button settings the app should open new window with
 settings. Settings can give possibility to change:
@@ -15,7 +8,12 @@ settings. Settings can give possibility to change:
 - Color theme
 etc.
 
+* App structure
+There is a window that has two "Open file" and "Save file" buttons
+in top of this window (...)
 
+After, there is a component that represent a row for storing 2
+columns.
 
 ** The First column
 *** App structure
@@ -23,7 +21,7 @@ etc.
 *** Output
 In this component information about header should be present like a
 list of information with good readability. The information should be
-present in order where firstly is information more important.
+present in order where firstly is the information more important.
 
 ** The Second column
 The lable of this section is "Memory View".
@@ -52,6 +50,13 @@ font size of this component should be changed automatically!
 
 This component has possibility to select bytes and this action change
 disassembly component (Read more in disassembly component section).
+
+**** TODO Add flexible address length
+**** TODO Vertical line between 4 hex's
+
+000000 | 0X F2 23 12 | F2 A2 23 F3 | E1 12 F2 A2 | 23 F3 E1 F1
+
+**** TODO Ascii translating
 
 **** Example
 
