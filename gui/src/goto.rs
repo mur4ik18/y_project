@@ -54,13 +54,7 @@ impl SimpleComponent for GoTo {
         match msg {
             GTInp::GTGet => {
                 let value = self.entry.text().to_string();
-                let mut l = (value.len() as u32)-1;
-                let mut result:u32 = 0;
-                for v in value.chars() {
-                    result += v.to_digit(16).unwrap() * ((16 as u32).pow(l));
-                    l-=1;
-                }
-                println!("Result is - {}", result);
+                _sender.output(GToutput::GT(u64::from_str_radix(value.as_str(), 16).expect("Not a Hex number!")));
             }
         }
     }

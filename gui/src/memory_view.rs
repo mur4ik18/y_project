@@ -1,6 +1,7 @@
 use gtk::prelude::*; use relm4::{ gtk, ComponentParts,
 ComponentSender, SimpleComponent, typed_view::list::{RelmListItem,
-TypedListView}, };
+                                                     TypedListView}, };
+use crate::gtk::ListView;
 
 /// MVLine is the line that we draw
 #[derive(Debug)]
@@ -171,6 +172,7 @@ pub struct MemoryView {
 #[derive(Debug)]
 pub enum MViewMsg {
     Draw(Vec<u8>),
+    ScrollTo(u64),
     None,
 }
 
@@ -249,6 +251,9 @@ impl SimpleComponent for MemoryView {
                     i+= 16;
                     if i >= leng {break;}
                 }
+            }
+            MViewMsg::ScrollTo(v) => {
+                ListView::scroll_to(self.lines.view, v);
             }
             MViewMsg::None => {}
         }

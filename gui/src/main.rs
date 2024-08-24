@@ -84,24 +84,16 @@ impl SimpleComponent for App {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         // Window builder for file opening
-
-
-
-
-
         let open_button = OpenButton::builder()
             .launch(OpenButtonSettings { dialog_settings: OpenDialogSettings::default(), text: "Open file", recently_opened_files: Some(".recent_files"), max_recent_files: 10, })
             // here we said where we need to put file path
             .forward(sender.input_sender(), Msg::Open);
-
 
         let goto = GoTo::builder()
             .launch(())
             .forward(sender.input_sender(),|msg| match msg {
                 GToutput::GT(u64) => Msg::GTMemoryView(u64),
             });
-
-
 
         let memview = MemoryView::builder()
             .launch(0)
@@ -119,6 +111,7 @@ impl SimpleComponent for App {
             memory_view_component: memview,
             goto: goto,
         };
+
         let goto = model.goto.widget();
         let line_list = model.memory_view_component.widget();
         let widgets = view_output!();
@@ -135,7 +128,11 @@ impl SimpleComponent for App {
                 self.memory_view_component
                     .emit(MViewMsg::Draw(self.bindata.clone()));
             }
-            Msg::GTMemoryView(u64) => {}
+            Msg::GTMemoryView(input) => {
+                println!("Msg - {}", input);
+                self.memory_view_component
+                    .emit(MViewMsg::ScrollTo(input));
+            }
             Msg::None => {}
         }
     }
