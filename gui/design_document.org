@@ -1,0 +1,53 @@
+#+title: Documentation for GUI
+#+author: A. Kotov
+
+* App structure
+There is a window that has two "Open file" and "Save file" buttons
+in top of this window (...)
+
+After, there is a component that represent a row for storing 2
+columns.
+
+** first column
+
+** second column
+The lable of this section is "Memory View".
+
+*** Go-to address
+There is a "to go" component that can to fall over searched memory
+address. Having in itself two elements:
+- Input field
+- Go-To button
+
+This element changes the memory view component scroll position.
+
+*** Memory view
+The next component is a field who shows memory address who starts
+always by first byte in hex decade (modulo of 16). In left party of
+this component there is a list of memory addresses.
+
+There are a lot of lines, which line starts by address like 000000 for
+first line. After address, this part has 15 bytes represented in hex
+like "F3".  This component is adaptive, if an offset of window changes
+font size of this component should be changed automatically!
+
+This component has possibility to select bytes and this action change
+disassembly component (Read more in disassembly component section).
+
+**** Example
+
+000000 0X F2 23 12 F2 A2 23 F3 E1 12 F2 A2 23 F3 E1
+
+000010 0X F2 23 12 F2 A2 23 F3 E1 12 F2 A2 23 F3 E1  
+
+000020 ...
+
+*** Disassembly 
+The next and last component is a disassembly part.
+
+Addresses are connected to the last byte of this code line. Then, there is
+code representation in bytes (show only in hex). The last part of line is
+code in asm.
+
+If we choose code in the memory view component, we need to show this code
+disassembled.
