@@ -19,7 +19,7 @@ pub struct DOSHeader<'a> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct COFFHeader<'a> {
     pub magic: &'a [u8],
     pub machine: &'a [u8],
@@ -140,8 +140,8 @@ pub struct StringTable {
 #[derive(Debug)]
 pub struct Section<'a> {
     pub name: String,
-    pub virtual_size: u32,
-    pub virtual_address: u32,
+    pub virtual_size: usize,
+    pub virtual_address: usize,
     pub raw_data_size: usize,
     pub ptr_to_raw_data: usize,
     pub ptr_to_relocations: usize,
@@ -154,24 +154,9 @@ pub struct Section<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct COFFStringTable<'a> {
-    pub strings: Vec<COFFString<'a>>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct COFFString<'a> {
-    pub length: usize,
-    pub structure_length: usize,
-    pub data_type: &'a [u8],
-    pub string: String,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
 pub struct RessourceDir<'a> {
     pub characteristics: &'a [u8],
-    pub time_data_stamp: &'a [u8],
+    pub time_date_stamp: &'a [u8],
     pub major_version: &'a [u8],
     pub minor_version: &'a [u8],
     pub name_entries_number: usize,
@@ -180,23 +165,89 @@ pub struct RessourceDir<'a> {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct RessourceDirEntries {
+pub struct RessourceDirEntries<'a> {
     pub name_offset: usize,
-    pub data_entry_offset: usize,
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct RessourceDirString<'a> {
-    pub length: usize,
-    pub unicode_string: &'a [u8],
+    pub data_entry_offset: &'a[u8],
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct RessourceDataEntry<'a> {
-    pub data_rva: &'a [u8],
+    pub data_rva: usize,
     pub size: usize,
     pub codepage: &'a [u8],
     pub reserved: &'a [u8],
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RessourceAdress <'a> {
+    pub size: usize,
+    pub address: usize,
+    pub codepage: &'a str
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RessourceAdresses<'a> {
+    pub adresses: Vec<RessourceAdress<'a>>,
+}
+
+
+pub enum SectionData<'a> {
+    Text(TextData<'a>),
+    Rsrc(RsrcDataList<'a>),
+    IData(ImportLibraries),
+    Unknown(UnknownSections<'a>)
+}
+
+#[derive(Debug)]
+pub struct UnknownSections<'a> {
+    pub sections : Vec<UnknownSection<'a>>,
+}
+
+#[derive(Debug)]
+pub struct UnknownSection<'a> {
+    pub section_name: String,
+    pub extracted_raw: &'a[u8]
+}
+
+#[derive(Debug)]
+pub struct TextData<'a> {
+    pub extracted_code: &'a [u8],
+}
+
+#[derive(Debug)]
+pub struct RsrcDataList<'a> {
+    pub data: Vec<RsrcData<'a>>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct RsrcData<'a> {
+    pub extracted_raw: &'a[u8],
+    pub codepage: &'a str
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct ImportDescriptor{
+    pub original_first_thunk: usize,
+    pub time_date_stamp: usize,
+    pub forwarder_chain: usize,
+    pub name_rva: usize,
+    pub first_thunk: usize
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct ImportLibrary{
+    pub name: String,
+    pub functions: Vec<String>
+}
+
+#[derive(Debug)]
+pub struct ImportLibraries{
+    pub libraries: Vec<ImportLibrary>
 }
